@@ -1,6 +1,6 @@
 # EC2 using Terraform and Ansible in pull mode
 
-Creation of EC2 instance using terraform, setup and installing nodejs App using ansible in push mode
+Creation of EC2 instance using terraform and execute ansible-playbook command using "local-exec" Terraform Provision command. Ansible setting up and installing nodejs App using ansible in push mode. Ansible used for install npm packages required for format date.
 Security group used needs to have 22 port open for enable ansible ssh connection
 
 
