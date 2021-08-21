@@ -1,0 +1,58 @@
+---
+# tasks file for nodejs
+
+- name: Install nodejs on suse
+  community.general.zypper:
+    name: nodejs
+    state: present
+  when: ansible_facts['pkg_mgr'] == "zypper"
+
+- name: Install npm on suse
+  community.general.zypper:
+    name: npm
+    state: present
+  when: ansible_facts['pkg_mgr'] == "zypper"
+
+- name: Installing node and npm on Debian Ubuntu
+  yum:
+    name: "{{ item }}"
+    enablerepo: epel
+    state: installed
+  with_items:
+    - nodejs
+    - npm
+  when: ansible_facts['pkg_mgr'] == "yum"
+
+
+- name: Install pm2 startup manager on SUSE
+  command:
+    cmd: sudo npm install pm2@latest -g
+    chdir: /home/ec2-user
+  when: ansible_facts['pkg_mgr'] == "zypper"
+
+# - name: Create node service on SUSE 2/N Start node as a pm2 service
+#   command:
+#     cmd: /usr/local/bin/pm2 start helloworld.js
+#     chdir: /home/ec2-user
+#   when: ansible_facts['pkg_mgr'] == "zypper"
+#
+# - name: Create node service on SUSE 3/N Create pm2 as a service on startup
+#   command:
+#     cmd: sudo env PATH=$PATH:/usr/bin /usr/local/bin/pm2 startup systemd -u ec2-user --hp /home/ec2-user
+#     chdir: /home/ec2-user
+#   when: ansible_facts['pkg_mgr'] == "zypper"
+#
+# - name: Create node service on SUSE 4/N Save pm2 service estatus
+#   command:
+#     cmd: /usr/local/bin/pm2 save
+#     chdir: /home/ec2-user
+#   when: ansible_facts['pkg_mgr'] == "zypper"
+#
+# - name: Create node service on SUSE 5/N Start pm2-ec2-user pm2 service
+#   command:
+#     cmd: sudo /usr/local/bin/pm2 start pm2-ec2-user
+#     chdir: /home/ec2-user
+#   when: ansible_facts['pkg_mgr'] == "zypper"
+
+# suse
+# community.general.zypper

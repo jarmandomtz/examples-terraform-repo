@@ -1,0 +1,7 @@
+---
+# Tells ansible to execute helloworld role in hosts listed in target var or localhost it not defined
+- hosts: all
+# 'll be executed with sudo privileges
+  become: yes
+  roles:
+    - helloworld
