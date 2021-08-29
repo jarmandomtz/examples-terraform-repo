@@ -89,15 +89,18 @@ t.add_resource(ec2.SecurityGroup(
 #  "sudo echo '*/2 * * * * /usr/bin/ansible-pull -U https://github.com/jarmandomtz/ansible-pull-gitrepo -C develop helloworld.yml -i localhost -u jarmandomtz -v --sleep 60 >> /tmp/ansible-pull.log' > /tmp/ansible-pull-crontab-cmd", 
 #  "sudo crontab -u ec2-user /tmp/ansible-pull-crontab-cmd",
 
+#Installation of ansible not working on AMI2
+#"yum install -y ansible",
+#"sudo amazon-linux-extras install ansible2 -y",
+
 ud = Base64(Join('\n', [
      "#!/bin/bash",
-     "sudo yum install -y https://s3.region.amazonaws.com/amazon-ssm-region/latest/linux_amd64/amazon-ssm-agent.rpm",
      "sudo systemctl enable amazon-ssm-agent",
      "sudo systemctl start amazon-ssm-agent",
-     "yum install --enablerepo=epel -y git",
-     "yum install --enablerepo=epel -y ansible",
+     "yum install -y git",
+     "sudo amazon-linux-extras install -y ansible2",
      AnsiblePullCmd,
-     "{} > /tmp/ansible-pull-crontab-cmd".format(AnsiblePullCmd),
+     "echo '*/2 * * * * {}' > /tmp/ansible-pull-crontab-cmd".format(AnsiblePullCmd),
      "sudo crontab -u ec2-user /tmp/ansible-pull-crontab-cmd"
 ]))
 

@@ -34,14 +34,17 @@ Steps for jenkins role
   - Start jenkins at chkconfig level using service (if instance restart, jenkins is going to start again)
 
 Steps for create Ansible playbook jenkins version
-- Create new jenkins.yaml on Ansible Playbook root indicating jenkins and nodejs as required roles to be executed. Not as a dependency for jenkins because jenkins does not require nodejs for run, are independent softwares
+- Create new jenkins.yaml on Ansible Playbook root path indicating jenkins and nodejs as required roles to be executed. Not as a dependency for jenkins role because jenkins does not require nodejs for run, are independent softwares
 - Create CF template using previous python troposphere script, call it jenkins-cf-template.py
 - Install library for create an instance profile "pip install awacs"
 - Change name and port of application: jenkins, 8080
-- Add an instance IAM Profile (how instance interact with AWS Services, EC2 instance IAM permissions without having to use access/secret keys)
+- Add an instance IAM Profile (how instance interact with AWS Services, EC2 instance IAM permissions without needing to have to use access/secret keys)
 - Add tropospher and iam sections on python troposphere script jenkins-cf-template.py
 - Create new role, assign it to the Instance profile, assign Instance profile to EC2 instance
-
+- Get CloudFormation template from Troposphere template
+- Create instance 
+- Get the Jenkins password 
+- Once instance created, enter to the web on "http://IP:8080" and paste the password
 
 ```js
 %> cat jenkins.yaml
@@ -104,6 +107,49 @@ t.add_resource(ec2.Instance(
     UserData=ud,
     IamInstanceProfile=Ref("InstanceProfile"),
 ))
+
+%> python jenkins-cf-template.py > jenkins-cf3.yaml
+
+%> aws cloudformation create-stack \
+      --capabilities CAPABILITY_IAM \
+      --stack-name jenkins \
+      --template-body file://jenkins-cf3.yaml \
+      --parameters ParameterKey=KeyPair,ParameterValue=EffectiveDevOpsAWS
+
+%> aws cloudformation wait stack-create-complete \
+      --stack-name jenkins
+
+%> aws cloudformation describe-stacks \
+      --stack-name jenkins \
+      --query 'Stacks[0].Outputs[0]'
+{
+    "OutputKey": "InstancePublicIp",
+    "OutputValue": "54.164.157.91",
+    "Description": "Public IP of our instance."
+}
+
+#If changes required on Troposphere script, generate yaml 2 and update stack
+%> aws cloudformation update-stack \
+      --capabilities CAPABILITY_IAM \
+      --stack-name jenkins \
+      --template-body file://jenkins-cf3.yaml \
+      --parameters ParameterKey=KeyPair,ParameterValue=EffectiveDevOpsAWS
+
+%> ssh -i ~/.ssh/EffectiveDevOpsAWS.pem ec2-user@54.164.157.91
+
+ec2-user %> cat /var/log/jenkins/jenkins.log
+...
+*************************************************************
+
+Jenkins initial setup is required. An admin user has been created and a password generated.
+Please use the following password to proceed to installation:
+
+a056b061da9041e79e02ea2a43121467
+
+This may also be found at: /var/lib/jenkins/secrets/initialAdminPassword
+
+*************************************************************
+...
 
 ```
 
