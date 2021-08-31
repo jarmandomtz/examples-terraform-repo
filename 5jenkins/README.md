@@ -151,6 +151,14 @@ This may also be found at: /var/lib/jenkins/secrets/initialAdminPassword
 *************************************************************
 ...
 
+ec2-user %> cat /var/lib/jenkins/secrets/initialAdminPassword
+
+%> aws cloudformation delete-stack \
+      --stack-name jenkins 
+
+%> aws cloudformation wait stack-delete-complete \
+      --stack-name jenkins
+
 ```
 
 
