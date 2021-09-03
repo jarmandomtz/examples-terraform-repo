@@ -108,13 +108,18 @@ t.add_resource(ec2.Instance(
     IamInstanceProfile=Ref("InstanceProfile"),
 ))
 
+# jenkins-cf-template.py: Version with AMI instance type
+# jenkins-cf-template-AMI2.py: Version with AMI2 instance type
+# jenkins-cf-template-AMI2-R53.py: Version with AMI instance type and Route53 DNS record
+
 %> python jenkins-cf-template.py > jenkins-cf3.yaml
 
 %> aws cloudformation create-stack \
       --capabilities CAPABILITY_IAM \
       --stack-name jenkins \
-      --template-body file://jenkins-cf3.yaml \
-      --parameters ParameterKey=KeyPair,ParameterValue=EffectiveDevOpsAWS
+      --template-body file://jenkins-cf4.yaml \
+      --parameters ParameterKey=KeyPair,ParameterValue=EffectiveDevOpsAWS \
+                   ParameterKey=HostedZone,ParameterValue=esausi.com
 
 %> aws cloudformation wait stack-create-complete \
       --stack-name jenkins
@@ -132,8 +137,12 @@ t.add_resource(ec2.Instance(
 %> aws cloudformation update-stack \
       --capabilities CAPABILITY_IAM \
       --stack-name jenkins \
-      --template-body file://jenkins-cf3.yaml \
-      --parameters ParameterKey=KeyPair,ParameterValue=EffectiveDevOpsAWS
+      --template-body file://jenkins-cf4.yaml \
+      --parameters ParameterKey=KeyPair,ParameterValue=EffectiveDevOpsAWS \
+                   ParameterKey=HostedZone,ParameterValue=esausi.com
+
+%> aws cloudformation wait stack-update-complete \
+      --stack-name jenkins
 
 %> ssh -i ~/.ssh/EffectiveDevOpsAWS.pem ec2-user@54.164.157.91
 
