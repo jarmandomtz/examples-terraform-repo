@@ -214,6 +214,8 @@ Steps
   - 
 
 ## Restore a Jenkins server from a /var/lib/jenkins backup
+Permissions reference: https://aws.amazon.com/es/blogs/security/writing-iam-policies-how-to-grant-access-to-an-amazon-s3-bucket/
+
 Steps
 - Create EC2 instance with Jenkins dependencies
 - Add on EC2 instance permissions to S3. Take care to split permission to bucket and bucket content, together does not work
