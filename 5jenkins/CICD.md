@@ -21,7 +21,7 @@ Steps
     - Discovery Branches: All branches
     - Scan organization Triggers: 5 mins
 
-## Create helloworld pipeline
+## Create helloworld test case
 Steps
 - Create new empty branch on helloworld project, "initial-branch"
 - Initialize repo
@@ -82,4 +82,47 @@ describe('main page', function(){
 
 ```
 
+## Create and execute automatically Jenkins pipeline
+Steps
+- Create a Jenkinsfile on the helloworld project
+- Add groovy code for the pipeline
+  - get code
+  - install dependencies
+  - run test
+  - clean
+- Create commit to "initial-branch" branch, pipeline will run automatically
+
+Is there is any problem with npm not installing packages, check /etc/passwd, Jenkins user requires bash permissions to run npm command
+
+```js
+#!groovy
+
+node { 
+  stage 'Checkout'
+    checkout scm #Organization Job, knows where to get the code
+  
+  stage 'Setup'
+    sh 'npm config set registry http://registry.npmjs.prg/'
+    sh 'npm install'
+
+  stage 'Mocha test'
+    sh './node_modules/mocha/bin/mocha'
+
+  stage 'Cleanup'
+    echo 'prune and cleanup'
+    sh 'npm prune'
+    sh 'rm node_modules -rf'
+}
+
+```
+
+## Create a PR 
+Steps
+- Enter to github console
+- Identify working branch "initial-branch"
+- Create PR, add title and description
+
+![PR](./imgs/github-pr-01.png)
+
+There we can see PR was created and pipeline is executed as a prerequisite to enable the merge.
 

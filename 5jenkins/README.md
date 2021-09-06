@@ -170,4 +170,81 @@ ec2-user %> cat /var/lib/jenkins/secrets/initialAdminPassword
 
 ```
 
+## Backup Jenkins server with tar command
+Reference: https://devopscube.com/jenkins-backup-data-configurations/
+With this provedure is going to be bakcup
+- Plugins
+- Configurations
+- Pipelines
+- Pipeline execution
 
+Steps
+- Enter to Jenkins server
+- Sudo as root user
+- Create a backup file using tar with gzip crompression
+- Send file to a Backup storage
+
+```js
+%> sudo su -
+%> mkdir /tmp/bkps
+%> cd /tmp/bkps
+%tmp/bkps> tar cvzf jenkins-backup-20210906-0646.gz /var/lib/jenkins/*
+
+```
+
+Other util commands,
+
+- Extrac file content use
+
+```js
+%> tar xvfz jenkins-backup-20210906-0646.gz
+```
+
+- List the content
+
+```js
+%> tar tf jenkins-backup-20210906-0646.gz
+```
+
+## Backup Jenkins using Thinkbackup
+Steps
+- Create a dir "/tmp/bkps"
+- Add permissions to user and group jenkins
+- Enter to the Jenkins console -> Manage Jenkins -> Thinkbackup -> Settings
+  - 
+
+## Restore a Jenkins server from a /var/lib/jenkins backup
+Steps
+- Create EC2 instance with Jenkins dependencies
+- Add on EC2 instance permissions to S3. Take care to split permission to bucket and bucket content, together does not work
+- Download backup file to EC2 instance
+- Overwrite /var/lib/jenkins dir with backup
+- Restart server
+
+```js
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": [
+                "s3:ListBucket"
+            ],
+            "Resource": [
+                "arn:aws:s3:::esausi-backups"
+            ]
+        },
+        {
+            "Effect": "Allow",
+            "Action": [
+                "s3:PutObject",
+                "s3:GetObject",
+                "s3:DeleteObject"
+            ],
+            "Resource": [
+                "arn:aws:s3:::esausi-backups/*"
+            ]
+        }
+    ]
+}
+```
