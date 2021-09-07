@@ -171,8 +171,10 @@ ec2-user %> cat /var/lib/jenkins/secrets/initialAdminPassword
 ```
 
 ## Backup Jenkins server with tar command
-Reference: https://devopscube.com/jenkins-backup-data-configurations/
-With this provedure is going to be bakcup
+References: 
+- https://devopscube.com/jenkins-backup-data-configurations/
+- https://www.youtube.com/watch?v=grQ4cAcj81U
+With this procedure is going to be full backup
 - Plugins
 - Configurations
 - Pipelines
@@ -206,22 +208,66 @@ Other util commands,
 %> tar tf jenkins-backup-20210906-0646.gz
 ```
 
-## Backup Jenkins using Thinkbackup
+## Backup Jenkins using "Periodic Backup Manager" plugin
 Steps
+- Create a new Jenkins installation
+- Install "Periodic Backup Manager" plugin
 - Create a dir "/tmp/bkps"
 - Add permissions to user and group jenkins
-- Enter to the Jenkins console -> Manage Jenkins -> Thinkbackup -> Settings
+- Download Backup from S3 bucket
+- Configure Backup plugin "Periodic Backup Manager" 
+- Create backup
   - 
+
+```js
+%> aws cloudformation create-stack \
+      --capabilities CAPABILITY_IAM \
+      --stack-name jenkinsbkp \
+      --template-body file://jenkins-testbkp.yaml \
+      --parameters ParameterKey=KeyPair,ParameterValue=EffectiveDevOpsAWS \
+                   ParameterKey=HostedZone,ParameterValue=esausi.com
+
+%> aws cloudformation wait stack-create-complete \
+      --stack-name jenkinsbkp
+
+%> aws cloudformation describe-stacks \
+      --stack-name jenkinsbkp \
+      --query 'Stacks[0].Outputs[0]'
+```
+
+- Unlock Jenkins
+- Install "Periodic Backup Manager"
+- Configure "Periodic Backup Manager"
+Jenkins console -> Manage Jenkins -> Periodic Backup Manager -> Configure
+  - Temporary directory: /tmp
+  - Backup schedule (cron): H 10 * * *
+  - Maximun backups in location: 3
+  - Store no older than (days): 5
+  - File Management Strategy: Full backup
+  - Storage Strategy: TarGzStorare
+  - Backup Location, LocalDirectory: /tmp/bkps
+- Create backup: : Enter to the Jenkins console -> Manage Jenkins -> Periodic Backup Manager -> Backup
+
+
 
 ## Restore a Jenkins server from a /var/lib/jenkins backup
 Permissions reference: https://aws.amazon.com/es/blogs/security/writing-iam-policies-how-to-grant-access-to-an-amazon-s3-bucket/
 
 Steps
-- Create EC2 instance with Jenkins dependencies
-- Add on EC2 instance permissions to S3. Take care to split permission to bucket and bucket content, together does not work
+- Create EC2 instance with Jenkins dependencies and permissions to S3 backup bucket "esausi-backups"
+- Unlock Jenkins
 - Download backup file to EC2 instance
-- Overwrite /var/lib/jenkins dir with backup
-- Restart server
+- Install "Periodic Backup Manager"
+- Configure "Periodic Backup Manager"
+Jenkins console -> Manage Jenkins -> Periodic Backup Manager -> Configure
+  - Temporary directory: /tmp
+  - Backup schedule (cron): H 10 * * *
+  - Maximun backups in location: 3
+  - Store no older than (days): 5
+  - File Management Strategy: Full backup
+  - Storage Strategy: TarGzStorare
+  - Backup Location, LocalDirectory: /tmp/bkps
+- Create backup: : Enter to the Jenkins console -> Manage Jenkins -> Periodic Backup Manager -> Backup
 
 ```js
 {
@@ -250,3 +296,5 @@ Steps
     ]
 }
 ```
+
+Script for create EC2 instance with permissions: jenkins-testbkp.yaml
