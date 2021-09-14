@@ -1,0 +1,139 @@
+Description: 'Effective DevOps in AWS: HelloWorld web application'
+Outputs:
+  DomainName:
+    Description: DNS using instance ID
+    Value: !Ref 'myDNSRecord'
+  InstancePublicIp:
+    Description: Public IP of our instance.
+    Value: !GetAtt 'instance.PublicIp'
+  WebUrl:
+    Description: Application endpoint
+    Value: !Join
+      - ''
+      - - http://
+        - !Ref 'myNodeserverDNSRecord'
+        - ':'
+        - '3000'
+Parameters:
+  HostedZone:
+    Description: The DNS name of an existing Amazon Route 53 hosted zone
+    Type: String
+  InstanceDNSRecordName:
+    Description: The DNS name for Instance to be deployed
+    Type: String
+  KeyPair:
+    ConstraintDescription: must be the name of an existing EC2 KeyPair.
+    Description: Name of an existing EC2 KeyPair to SSH
+    Type: AWS::EC2::KeyPair::KeyName
+Resources:
+  InstanceProfile:
+    Properties:
+      Path: /
+      Roles:
+        - !Ref 'Role'
+    Type: AWS::IAM::InstanceProfile
+  Policy:
+    Properties:
+      PolicyDocument:
+        Statement:
+          - Action:
+              - s3:*
+            Effect: Allow
+            Resource:
+              - '*'
+      PolicyName: AllowsS3
+      Roles:
+        - !Ref 'Role'
+    Type: AWS::IAM::Policy
+  Role:
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action:
+              - sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service:
+                - ec2.amazonaws.com
+      Description: Role for add SSM capabilities to Jenkins instance
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy
+        - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+    Type: AWS::IAM::Role
+  SecurityGroup:
+    Properties:
+      GroupDescription: Allow SSH and TCP/3000 access
+      SecurityGroupIngress:
+        - CidrIp: '0.0.0.0/0'
+          FromPort: '22'
+          IpProtocol: tcp
+          ToPort: '22'
+        - CidrIp: '0.0.0.0/0'
+          FromPort: '3000'
+          IpProtocol: tcp
+          ToPort: '3000'
+    Type: AWS::EC2::SecurityGroup
+  instance:
+    Properties:
+      IamInstanceProfile: !Ref 'InstanceProfile'
+      ImageId: ami-0c2b8ca1dad447f8a
+      InstanceType: t2.micro
+      KeyName: !Ref 'KeyPair'
+      SecurityGroups:
+        - !Ref 'SecurityGroup'
+      UserData: !Base64
+        Fn::Join:
+          - "\n"
+          - - '#!/bin/bash'
+            - sudo systemctl enable amazon-ssm-agent
+            - sudo systemctl start amazon-ssm-agent
+            - yum install -y git
+            - sudo amazon-linux-extras install -y ansible2
+            - /usr/bin/ansible-pull -U https://github.com/jarmandomtz/ansible-pull-gitrepo
+              nodeserver.yml -C feature/add-codedeploy -i localhost -v --sleep 60
+              >> /tmp/ansible-pull.log
+            - >-
+              echo '*/2 * * * * /usr/bin/ansible-pull -U https://github.com/jarmandomtz/ansible-pull-gitrepo
+              nodeserver.yml -C feature/add-codedeploy -i localhost -v --sleep 60
+              >> /tmp/ansible-pull.log' > /tmp/ansible-pull-crontab-cmd
+            - sudo crontab -u ec2-user /tmp/ansible-pull-crontab-cmd
+    Type: AWS::EC2::Instance
+  myDNSRecord:
+    Properties:
+      Comment: DNS name for my instance.
+      HostedZoneName: !Join
+        - ''
+        - - !Ref 'HostedZone'
+          - .
+      Name: !Join
+        - ''
+        - - !Ref 'instance'
+          - .
+          - !Ref 'AWS::Region'
+          - .
+          - !Ref 'HostedZone'
+          - .
+      ResourceRecords:
+        - !GetAtt 'instance.PublicIp'
+      TTL: '900'
+      Type: A
+    Type: AWS::Route53::RecordSet
+  myNodeserverDNSRecord:
+    Properties:
+      Comment: DNS name for my instance.
+      HostedZoneName: !Join
+        - ''
+        - - !Ref 'HostedZone'
+          - .
+      Name: !Join
+        - ''
+        - - !Ref 'InstanceDNSRecordName'
+          - .
+          - !Ref 'HostedZone'
+          - .
+      ResourceRecords:
+        - !GetAtt 'instance.PublicIp'
+      TTL: '900'
+      Type: A
+    Type: AWS::Route53::RecordSet
+
