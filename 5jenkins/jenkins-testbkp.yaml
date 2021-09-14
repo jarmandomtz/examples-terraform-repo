@@ -104,8 +104,8 @@ Resources:
             - sudo mkdir -p /tmp/bkps
             - sudo chown jenkins /tmp/bkps
             - sudo chgrp jenkins /tmp/bkps
-            - aws s3 cp s3://esausi-backups/jenkins/backup_2021_09_07_12_09_15_259.pbobj /tmp/bkps/
-            - aws s3 cp s3://esausi-backups/jenkins/backup_2021_09_07_12_09_15_259.tar.gz /tmp/bkps/
+            - aws s3 cp s3://esausi-backups/jenkins/backup_2021_09_12_20_01_18_245.pbobj /tmp/bkps/
+            - aws s3 cp s3://esausi-backups/jenkins/backup_2021_09_12_20_01_18_245.tar.gz /tmp/bkps/
     Type: AWS::EC2::Instance
   myDNSRecord:
     Properties:
