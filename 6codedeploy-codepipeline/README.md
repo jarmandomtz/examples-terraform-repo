@@ -76,6 +76,9 @@ t.add_resource(IAMPolicy(
 %> aws cloudformation delete-stack \
       --stack-name helloworld-staging 
 
+%> aws cloudformation wait stack-delete-complete \
+      --stack-name helloworld-staging
+
 %> aws cloudformation create-stack \
       --capabilities CAPABILITY_IAM \
       --stack-name helloworld-staging \
