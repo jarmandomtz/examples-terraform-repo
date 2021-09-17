@@ -1,4 +1,11 @@
 # Using CodeDeploy and CodePipeline
+Trying to answer the questions for clarify use of CodeDeploy and CodePipeline
+- What are we trying to deploy?   CodePipeline
+- Where are we trying to deploy?  CodeDeploy, conf file
+- How can we deploy it?           CodeDeploy, hooks on appspec.yml file
+
+**CodeDeploy** is an agent and configuration files and helpers which help to control deployment and status validation of our application on an EC2 instance
+**CodePipeline** is a fully managed service dedicated to creating delivery pipelines, integrated with AWS ecosystem, it means CodeDeploy, IAM. Thanks to its API, a number of services can be integrated into your pipelines, including Jenkins and Github.
 
 ## Setup
 In order to use CodeDeploy, EC2 instance require to use CodeDeploy Agent, an executable from S3.
@@ -125,10 +132,27 @@ t.add_resource(IAMPolicy(
 %> 
 ```
 
-## Creating CodeDeploy Application (create env for deploy apps)
+## Setup instance deployment - CodeDeploy
 Creating the application in Codedeploy allows us to define where our newly created application will be deployed.
+In previous example we were using ansible to start/stop de application, here we are going to use Codedeploy
+Codedeploy requires a series of scripts for treat our app as a service. Codedeploy agent is going to manage
+our application as a service using the scripts, going through this sequence of events
+  Appication Stop -> Download Bundle -> BeforeInstall -> Install -> AfterInstall -> Application Start -> Validate Service
 
-Steps,
+Codedeploy hooks
+Custom acction to be executed on the previous list of events, are defined on the appspec.yml
+We define 3 scripts for: start, stop and validate (check if deployment was successful)
+
+**Codedeploy lifecycle**
+Codedeploy agent is going to manage our deployment with the events
+- Download application package and decompress it
+- Run stop script
+- Copy application and upstart script
+- Run start script
+- Run validate script validating everything is working as expected
+
+
+**Implementation steps,**
 - AWS Console -> CodeDeploy Console -> Get started now -> Custom deployment -> Skip walkthrough
 - Create "hellonewworld" Application, Compute platform "EC2/On-premises" -> Create application
 - Create a Deployment group (Environment)
@@ -142,6 +166,8 @@ Steps,
   - Rollback: Roll back when a deployment fails
   -> Create deployment group
 - Create Codedeploy script on App repo "appspec.yml"  (helloworld> git checkout helloworld-codedeploy)
+- Create service configuration on scripts/helloworld.conf
+- Add Codedeploy hook scripts for stop, start, validate on scripts dir, add execution permission
 
 ```js
 %> cat appspec.yml
@@ -162,5 +188,49 @@ hooks:
   ValidateService:
     - location: scripts/validate.sh
 
+%> cat scripts/helloworld.conf
+description "Hello world Deamon"
+
+# Start when the system is ready to do networking.
+start on started elastic-network-interfaces
+
+# Stop when the system is on its way down.
+stop on shutdown
+
+respawn
+script
+    exec su --session-command="/usr/bin/node /home/local/helloworld/helloworld.js" ec2-user
+end script
+
+%> cat scritps/start.sh
+#!/bin/sh
+start helloworld
+
+%> cat scripts/stop.sh
+#!/bin/sh
+
+[[ -e /etc/init/helloworld.conf ]] \
+   && status helloworld | \
+      grep -q '^ĥelloworld start/running, process' \
+   && [[ $? -eq 0 ]] \
+   && stop helloworld || echo "Application not started"
+
+%> cat scripts/validate.sh
+#!/bin/sh
+curl -I localhost:3000
+
+%> chmod a+x scripts/{start,stop,validate}.sh
+
 ```
+
+## Setup Pipeline - CodePipeline
+
+Out pipeline is going to be composed of these stages,
+- Get code from github, package it and store on S3
+- Test our application using Jenkins
+- Take the package from S3 and deploy on Staging environment
+- Validation step - On demand production deployment process for deploy to Production environment
+
+This control for deploy to production use to be called Continous delivery pipeline, but when there are confidence on the process, it can be aliminated and turn it into a fully automated pipeline.
+
 
