@@ -245,6 +245,8 @@ For create a pipeline,
   - Select "Codedeploy"
   - Application name "hellonewworld"
   - Deploymemt group "staging" (previously created on CodeDeploy)
+- Make a change on the code repo "helloworld" and commit + push, change should fire the pipeline
+- Test the change
 
 ### Testing 
 
@@ -322,6 +324,17 @@ hooks:
       runas: root
   ValidateService:
     - location: scripts/validate.sh
+```
+
+**Test the app**
+For test the app is just requiered to get the IP and call App url
+
+```js
+%> aws cloudformation describe-stacks \
+     --stack-name helloworld-staging \
+     --query 'Stacks[0].Outputs[0].OutputValue' \
+     --output text | xargs -I {} curl {}:3000
+Hello World
 ```
 
 ## References
