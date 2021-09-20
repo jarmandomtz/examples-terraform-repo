@@ -6,7 +6,7 @@ Now is time to integrate Codepipeline with Jenkins, for do this it is neccessary
     - Install Jenkins initial key
     - Define DNS name as "jenkins.esausi.com"
     - Install default plugins
-    - install "Periodic Backup Manager" plugin, configure it and Restore backup from /tmp/bkps
+    - install "Periodic Backup Manager" plugin, configure it and Restore backup from /tmp/bkps, wait until Restoring message dissapear
     - Restart Jenkins, "http://jenkins.esausi.com:8080/restart"
 - Install CodePipeline plugin on Jenkins
 - Create a Jenkins Job for the required processing
