@@ -107,12 +107,19 @@ Resources:
               > /tmp/ansible-pull-crontab-cmd
             - sudo crontab -u ec2-user /tmp/ansible-pull-crontab-cmd
             - sudo mkdir -p /tmp/bkps
-            - sudo aws s3 cp s3://esausi-backups/jenkins/backup_2021_09_12_20_01_18_245.pbobj
+            - sudo aws s3 cp s3://esausi-backups/jenkins/jenkins-bkp-latest.tar.gz
               /tmp/bkps/
-            - sudo aws s3 cp s3://esausi-backups/jenkins/backup_2021_09_12_20_01_18_245.tar.gz
+            - sudo aws s3 cp s3://esausi-backups/jenkins/jenkins-aws-createbkp.sh
               /tmp/bkps/
-            - sudo chown -R jenkins /tmp/bkps
-            - sudo chgrp -R jenkins /tmp/bkps
+            - sudo chmod 555 /tmp/bkps/jenkins-aws-createbkp.sh
+            - cd /tmp/bkps/
+            - tar -xf jenkins-bkp-latest.tar.gz
+            - cp -r ./jobs/. /var/lib/jenkins/jobs
+            - cp -r ./secrets/. /var/lib/jenkins/secrets
+            - cp -r ./credentials.xml /var/lib/jenkins/
+            - cp -r ./periodicBackup.xml /var/lib/jenkins/
+            - sudo chown -R jenkins /var/lib/jenkins
+            - sudo chgrp -R jenkins /var/lib/jenkins
     Type: AWS::EC2::Instance
   myDNSRecord:
     Properties:
