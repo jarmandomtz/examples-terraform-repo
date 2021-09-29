@@ -160,7 +160,7 @@ Components setup and used until now
   - BeforeInstall: scripts/stop.sh, scripts/setup.sh, O.S service setup
   - ApplicationStart: scripts/start.sh, O.S service start
   - ValidationServer: scripts/validate.sh, App testing using curl command
-
+- SNS mail notification informing pipeline result
 
 ## Troubleshooting
 
