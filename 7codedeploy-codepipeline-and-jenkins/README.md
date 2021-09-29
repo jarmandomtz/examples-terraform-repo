@@ -127,6 +127,16 @@ t.add_resource(IAMPolicy(
 
 %> aws cloudformation wait stack-create-complete \
       --stack-name staging
+
+%> aws cloudformation delete-stack \
+      --stack-name staging 
+
+%> aws cloudformation wait stack-delete-complete \
+      --stack-name staging
+
+#For facilitate environment setup it were prepared shell scripts
+%> startenv.sh
+%> stopenv.sh
 ```
 
 ## Test complete pipeline
