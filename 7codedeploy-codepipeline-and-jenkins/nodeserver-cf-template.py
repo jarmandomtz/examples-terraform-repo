@@ -37,19 +37,15 @@ from awacs.sts import AssumeRole
 from troposphere.route53 import RecordSetType
 ### Finish
 
-ApplicationName = "jenkins"
-ApplicationPort = "8080"
+ApplicationName = "nodeserver"
+ApplicationPort = "3000"
 PublicCidrIp = get('https://api.ipify.org').text + "/0" #str(ip_network(get_ip()))
 
 GithubAccount = "jarmandomtz"
 GithubAnsibleURL = "https://github.com/{}/ansible-pull-gitrepo".format(GithubAccount)
-#GithubBranch = "develop"
 GithubBranch = "feature/add-codedeploy"
 
-AnsibleRoleName = "jenkinswithbkp"
-
 AnsiblePullCmd = "/usr/bin/ansible-pull -U {} {}.yml -C {} -i localhost -v --sleep 60 >> /tmp/ansible-pull.log".format(GithubAnsibleURL,ApplicationName, GithubBranch)
-AnsiblePullJenkinsBkpCmd = "/usr/bin/ansible-pull -U {} {}.yml -C {} -i localhost -v --sleep 60 >> /tmp/ansible-pull.log".format(GithubAnsibleURL,AnsibleRoleName, GithubBranch)
 
 t = Template()
 
@@ -65,7 +61,7 @@ t.add_parameter(Parameter(
 
 t.add_resource(ec2.SecurityGroup(
     "SecurityGroup",
-    GroupDescription="Allow SSH, HTTP and TCP/{} access".format(ApplicationPort),
+    GroupDescription="Allow SSH and TCP/{} access".format(ApplicationPort),
     SecurityGroupIngress=[
         ec2.SecurityGroupRule(
             IpProtocol="tcp",
@@ -80,12 +76,6 @@ t.add_resource(ec2.SecurityGroup(
             ToPort=ApplicationPort,
             CidrIp="0.0.0.0/0",
         ),
-        ec2.SecurityGroupRule(
-            IpProtocol="tcp",
-            FromPort=80,
-            ToPort=80,
-            CidrIp="0.0.0.0/0",
-        ),        
     ],
 ))
 
@@ -110,24 +100,10 @@ ud = Base64(Join('\n', [
      "sudo systemctl start amazon-ssm-agent",
      "yum install -y git",
      "sudo amazon-linux-extras install -y ansible2",
-     AnsiblePullJenkinsBkpCmd,
-]))    
-
-#     "echo '*/2 * * * * {}' > /tmp/ansible-pull-crontab-cmd".format(AnsiblePullCmd),
-#     "sudo crontab -u ec2-user /tmp/ansible-pull-crontab-cmd",
-#     "sudo mkdir -p /tmp/bkps",
-#     "sudo aws s3 cp s3://esausi-backups/jenkins/jenkins-bkp-latest.tar.gz /tmp/bkps/",
-#     "sudo aws s3 cp s3://esausi-backups/jenkins/jenkins-aws-createbkp.sh /tmp/bkps/",
-#     "sudo chmod 555 /tmp/bkps/jenkins-aws-createbkp.sh",
-#     "cd /tmp/bkps/",
-#     "tar -xf jenkins-bkp-latest.tar.gz",
-#     "cp -r ./jobs/. /var/lib/jenkins/jobs",
-#     "cp -r ./secrets/. /var/lib/jenkins/secrets",
-#     "cp -r ./credentials.xml /var/lib/jenkins/",
-#     "cp -r ./periodicBackup.xml /var/lib/jenkins/",
-#     "sudo chown -R jenkins /var/lib/jenkins",
-#     "sudo chgrp -R jenkins /var/lib/jenkins",
-#]))
+     AnsiblePullCmd,
+     "echo '*/2 * * * * {}' > /tmp/ansible-pull-crontab-cmd".format(AnsiblePullCmd),
+     "sudo crontab -u ec2-user /tmp/ansible-pull-crontab-cmd"
+]))
 
 #Create new role
 ### Start
@@ -158,29 +134,13 @@ t.add_resource(InstanceProfile(
 
 #Add S3 Bucket permissions
 t.add_resource(IAMPolicy(
-    "S3Policy",
+    "Policy",
     PolicyName="AllowsS3",
     PolicyDocument=Policy(
         Statement=[
             Statement(
                 Effect=Allow,
                 Action=[Action("s3", "*")],
-                Resource=["*"]
-            )
-        ]
-    ),
-    Roles=[Ref("Role")]
-))
-
-#Add CodePipeline service permissions
-t.add_resource(IAMPolicy(
-    "CodepipelinePolicy",
-    PolicyName="AllowsCodePipeline",
-    PolicyDocument=Policy(
-        Statement=[
-            Statement(
-                Effect=Allow,
-                Action=[Action("codepipeline", "*")],
                 Resource=["*"]
             )
         ]
@@ -209,6 +169,14 @@ hostedzone = t.add_parameter(
     )
 )
 
+instanceDNSRecordName = t.add_parameter(
+    Parameter(
+        "InstanceDNSRecordName",
+        Description="The DNS name for Instance to be deployed",
+        Type="String",
+    )
+)
+
 myDNSRecord = t.add_resource(
     RecordSetType(
         "myDNSRecord",
@@ -223,13 +191,13 @@ myDNSRecord = t.add_resource(
     )
 )
 
-myJenkinsDNSRecord = t.add_resource(
+myNodeserverDNSRecord = t.add_resource(
     RecordSetType(
-        "myJenkinsDNSRecord",
+        "myNodeserverDNSRecord",
         HostedZoneName=Join("", [Ref(hostedzone), "."]),
         Comment="DNS name for my instance.",
         Name=Join(
-            "", ["jenkins", ".", Ref(hostedzone), "."]
+            "", [Ref(instanceDNSRecordName), ".", Ref(hostedzone), "."]
         ),
         Type="A",
         TTL="900",
@@ -254,7 +222,7 @@ t.add_output(Output(
     Description="Application endpoint",
     Value=Join("", [
 #        "http://", GetAtt("instance", "PublicDnsName"),
-        "http://", Ref("myJenkinsDNSRecord"),
+        "http://", Ref("myNodeserverDNSRecord"),
         ":", ApplicationPort
     ]),
 ))

@@ -72,7 +72,7 @@ Resources:
     Type: AWS::IAM::Policy
   SecurityGroup:
     Properties:
-      GroupDescription: Allow SSH and TCP/8080 access
+      GroupDescription: Allow SSH, HTTP and TCP/8080 access
       SecurityGroupIngress:
         - CidrIp: '0.0.0.0/0'
           FromPort: '22'
@@ -82,6 +82,10 @@ Resources:
           FromPort: '8080'
           IpProtocol: tcp
           ToPort: '8080'
+        - CidrIp: '0.0.0.0/0'
+          FromPort: 80
+          IpProtocol: tcp
+          ToPort: 80
     Type: AWS::EC2::SecurityGroup
   instance:
     Properties:
@@ -100,26 +104,8 @@ Resources:
             - yum install -y git
             - sudo amazon-linux-extras install -y ansible2
             - /usr/bin/ansible-pull -U https://github.com/jarmandomtz/ansible-pull-gitrepo
-              jenkins.yml -C develop -i localhost -v --sleep 60 >> /tmp/ansible-pull.log
-            - >-
-              echo '*/2 * * * * /usr/bin/ansible-pull -U https://github.com/jarmandomtz/ansible-pull-gitrepo
-              jenkins.yml -C develop -i localhost -v --sleep 60 >> /tmp/ansible-pull.log'
-              > /tmp/ansible-pull-crontab-cmd
-            - sudo crontab -u ec2-user /tmp/ansible-pull-crontab-cmd
-            - sudo mkdir -p /tmp/bkps
-            - sudo aws s3 cp s3://esausi-backups/jenkins/jenkins-bkp-latest.tar.gz
-              /tmp/bkps/
-            - sudo aws s3 cp s3://esausi-backups/jenkins/jenkins-aws-createbkp.sh
-              /tmp/bkps/
-            - sudo chmod 555 /tmp/bkps/jenkins-aws-createbkp.sh
-            - cd /tmp/bkps/
-            - tar -xf jenkins-bkp-latest.tar.gz
-            - cp -r ./jobs/. /var/lib/jenkins/jobs
-            - cp -r ./secrets/. /var/lib/jenkins/secrets
-            - cp -r ./credentials.xml /var/lib/jenkins/
-            - cp -r ./periodicBackup.xml /var/lib/jenkins/
-            - sudo chown -R jenkins /var/lib/jenkins
-            - sudo chgrp -R jenkins /var/lib/jenkins
+              jenkinswithbkp.yml -C feature/add-codedeploy -i localhost -v --sleep
+              60 >> /tmp/ansible-pull.log
     Type: AWS::EC2::Instance
   myDNSRecord:
     Properties:
