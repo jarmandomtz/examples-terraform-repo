@@ -3,6 +3,9 @@
 Reference,
 - https://linoxide.com/lvm-configuration-linux/
 
+Extend/Resize LVM partition in linux
+- https://linoxide.com/how-extend-resize-lvm-partition-linux/
+
 ## LVM concepts
 
 - Physical Volume (PV): it is a whole disk or a partition of a disk
