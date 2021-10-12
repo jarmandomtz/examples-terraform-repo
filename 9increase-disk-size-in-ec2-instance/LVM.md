@@ -6,6 +6,12 @@ Reference,
 Extend/Resize LVM partition in linux
 - https://linoxide.com/how-extend-resize-lvm-partition-linux/
 
+Mount a Filesystem
+- https://linoxide.com/how-to-mount-drive-in-linux/
+
+Remove a LV
+- https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/6/html/logical_volume_manager_administration/lv_remove
+
 ## LVM concepts
 
 - Physical Volume (PV): it is a whole disk or a partition of a disk
@@ -215,3 +221,119 @@ Commands to scan PVs, LVs, VGs
   PV /dev/sda3   VG ubuntu-vg       lvm2 [<222.57 GiB / 101.28 GiB free]
   Total: 1 [<222.57 GiB] / in use: 1 [<222.57 GiB] / in no VG: 0 [0   ]
 ```
+
+## Extend LVM partition
+
+### Extend LVM using existing disk
+
+Steps,
+- Show details of Logical Volume, get the name of LV
+- Unmount the partition
+- Extend LV, suppose we want to add 100Gb
+- Resize the filesystem
+
+```js
+%> sudo vgdisplay -v
+
+  --- Volume group ---
+  VG Name               ubuntu-vg
+ ...   
+  --- Logical volume ---
+  LV Path                /dev/ubuntu-vg/ubuntu-lv
+  ...   
+  --- Logical volume ---
+  LV Path                /dev/ubuntu-vg/lv_test
+  ...   
+  --- Physical volumes ---
+  PV Name               /dev/sda3     
+  PV UUID               qzH8zZ-Ts8j-WJi1-e9v6-YyTZ-0E5M-kwNLfd
+  PV Status             allocatablev
+# If RHEL 3 required to unmount
+%> sudo unmount /dev/ubuntu-vg/ubuntu-lv
+
+%> sudo lvextend -L+100G /dev/ubuntu-vg/ubuntu-lv
+Size of logical volume ubuntu-vg/ubuntu-lv changed from <111.29 GiB (28489 extents) to <211.29 GiB (54089 extents).
+  Logical volume ubuntu-vg/ubuntu-lv successfully resized.
+
+# On RHEL 4, use command ext2online
+%> sudo resize2fs /dev/ubuntu-vg/ubuntu-lv
+resize2fs 1.45.5 (07-Jan-2020)
+Filesystem at /dev/ubuntu-vg/ubuntu-lv is mounted on /; on-line resizing required
+old_desc_blocks = 14, new_desc_blocks = 27
+The filesystem on /dev/ubuntu-vg/ubuntu-lv is now 55387136 (4k) blocks long.
+
+#If RHEL 3, mount you partition again
+%> sudo mount /dev/ubuntu-vg/ubuntu-lv /
+
+%> sudo vgdisplay -v
+  --- Volume group ---
+  VG Name               ubuntu-vg
+ ...
+  VG Size               <222.57 GiB
+  PE Size               4.00 MiB
+  Total PE              56977
+  Alloc PE / Size       56957 / <222.49 GiB
+  Free  PE / Size       20 / 80.00 MiB
+  VG UUID               GMIAyA-EZVb-XTfD-CCa1-4Ywt-dQ1q-3PcmQZ
+  --- Logical volume ---
+  LV Path                /dev/ubuntu-vg/ubuntu-lv
+ ...
+  LV Size                <222.49 GiB
+  ...
+  --- Physical volumes ---
+  PV Name               /dev/sda3     
+  PV UUID               qzH8zZ-Ts8j-WJi1-e9v6-YyTZ-0E5M-kwNLfd
+  PV Status             allocatable
+  Total PE / Free PE    56977 / 20
+
+%> df -Ph
+Filesystem                         Size  Used Avail Use% Mounted on
+...
+/dev/mapper/ubuntu--vg-ubuntu--lv  219G   90G  119G  44% /
+...
+```
+
+### Deleting LV
+
+Steps,
+- Identify the LV to delete
+- Unmount the filesystem
+- Delete the LV
+
+```js
+%> df -Ph
+%> sudo umount /dev/ubuntu-vg/lv_test
+%> sudo lvremove /dev/ubuntu-vg/lv_test
+Do you really want to remove and DISCARD active logical volume ubuntu-vg/lv_test? [y/n]: y
+  Logical volume "lv_test" successfully removed
+
+%> sudo vgdisplay -v
+```
+
+### Mounting existing partition 
+
+Steps,
+- Identify LV and if is not mounted
+- Validate /tmp/armando not mounted
+- Mounting filesystem
+
+```js
+# Identify LV and if is not mounted
+%> sudo vgdisplay -v
+ ...   
+  --- Logical volume ---
+  LV Path                /dev/ubuntu-vg/lv_test
+  ...   
+%> df -Ph
+#Validate /tmp/armando not mounted
+
+# Mounting filesystem
+%> sudo mkdir /tmp/armando
+%> sudo chmod armando /tmp/armando
+%> sudo mount /dev/ubuntu-vg/lv_test /tmp/armando
+
+#Validate filesystem was mounted
+%> df -Ph
+
+```
+
