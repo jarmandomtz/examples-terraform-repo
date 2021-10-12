@@ -60,7 +60,7 @@ variable "my_zone_name" {
 ```js
 %> cat monolith.tf
 module "monolith_application" {
- #source = "github.com/giuseppeborgese/effective_devops_with_aws__second_edition//terraform-modules//monolith-playground"
+  #source = "github.com/giuseppeborgese/effective_devops_with_aws__second_edition//terraform-modules//monolith-playground"
   #source = "github.com/esausi/effective_devops_with_aws__second_edition//terraform-modules//monolith-playground?ref=develop"
   source = "github.com/esausi/effective_devops_with_aws__second_edition//terraform-modules//monolith-playground?ref=master"
   my_vpc_id = "vpc-087ee567e804b3ff9" #"${var.my_default_vpc}"

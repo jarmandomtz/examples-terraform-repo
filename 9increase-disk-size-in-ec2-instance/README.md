@@ -70,6 +70,4 @@ Device       Start       End   Sectors   Size Type
 /dev/sda2     4096   2101247   2097152     1G Linux filesystem
 /dev/sda3  2101248 468858879 466757632 222.6G Linux filesystem
 ...
-
-
 ```
