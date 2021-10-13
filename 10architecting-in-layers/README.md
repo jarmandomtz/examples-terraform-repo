@@ -45,6 +45,13 @@ Resources to be created,
 - DB-Group
 - DB-Instance  
 
+Once all created,
+- If previous example exist, Generate the DB backup
+- Load the data on the new DB and validate it was loaded
+  - If the the dump created, just load the dumb
+  - If no dump file, create DB from cero
+- Change the connection URL on the App
+- Restart the app
 
 ```js
 %> cat main.tf
@@ -100,4 +107,46 @@ Saved the plan to: /tmp/tfill.out
 ...
 
 %> terraform apply /tmp/tfill.out
+
+# If previus DB exists, dump the DB
+$> mysqldump -u monty -psome_pass -h localhost demodb > demodbdump.sql
+
+# Else, create DB from cero
+%> mysql -u root -e "create database demodb;" -h demodb.[DBID].us-east-1.rds.amazonaws.com
+%> mysql -u root -e "CREATE TABLE visits (id bigint(20) NOT NULL AUTO_INCREMENT, count bigint(20) NOT NULL, version bigint(20) NOT NULL, PRIMARY KEY (id)) ENGINE=InnoDB DEFAULT CHARSET=latin1;" demodb -h demodb.[DBID].us-east-1.rds.amazonaws.com
+%> mysql -u root -e "INSERT INTO demodb.visits (count) values (0) ;"
+%> mysql -u root -e "CREATE USER 'monty'@'localhost' IDENTIFIED BY 'some_pass';"
+%> mysql -u root -e "GRANT ALL PRIVILEGES ON *.* TO 'monty'@'localhost' WITH GRANT OPTION;"
+
+# Stop the local DB
+%> sudo service mariadb stop
+
+# Restore the DB on RDS
+%> mysql -u monty -psome_pass -h demodb.[DBID].us-east-1.rds.amazonaws.com demodb < demodbdump.sql
+
+# Validate content
+%> mysql -u monty -psome_pass -h demodb.[DBID].us-east-1.rds.amazonaws.com 
+...
+MySQL [(none)]> use demodb;
+MySQL [(none)]> select * from visits;
+
+# Change connection URL
+%> cat /home/ec2-user/tomcat.sh
+...
+#db_url=jdbc:mysql://localhost:3306/
+db_url=jdbc:mysql://demodb.[DBID].us-east-1.rds.amazonaws.com:3306/
+
+# Restart the tomcat service
+%> pkill java
+%> systemctl start tomcat
+
+```
+
+## Testing the App
+
+For test the app, just use the DNS created for the app,
+
+```js
+curl -h http://app.esausi.com:8080/visits
+
 ```
