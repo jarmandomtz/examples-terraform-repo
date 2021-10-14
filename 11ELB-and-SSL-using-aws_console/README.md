@@ -4,6 +4,8 @@ On the deployment, we are going to change the Apache by ELB service
 When to use NLB
 - If you need to manage TCP connections or you need to control the public IP of your balancer instead. You cannot use SSL feature with this type of balancer
 
+Example adding user authentication using Auth0 [here](./UserAuthenticationWithAuth0.md)
+
 ## Configuration using AWS Console
 
 Steps required,
@@ -81,6 +83,13 @@ Open the SG on ALB for the port 443
     Procol-Port: HTTPS-443
     Default action: Forward to "break-the-monolith"
     Default SSL Certificate: From ACM - Select created certificate
+
+### ALB vs NLB
+NLB is designed to handle tens of millions of request per second while maintaining high througput at ultra-low latency, with no effort on the customer's part. As a result, no pre-warm is needed.
+
+ALB instead follows the same rules as CLB.
+
+NLB doesn't require pre-warming. However, CLB and ALB still need it.
 
 ## Test app on security URL
 
