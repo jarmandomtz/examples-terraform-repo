@@ -91,6 +91,10 @@ ALB instead follows the same rules as CLB.
 
 NLB doesn't require pre-warming. However, CLB and ALB still need it.
 
+### Configuring Auto Scaling capabilities
+
+Configuring autoscaling to the web app using AWS EC2 Auto Scaling Group [here](./AutoScalling.md)
+
 ## Test app on security URL
 
 ```js

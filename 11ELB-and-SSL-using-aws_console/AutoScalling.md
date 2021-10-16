@@ -30,11 +30,11 @@ Objects required,
 - Auto scaling group
 
 Click on Auto scaling groups option and an automatic wizard will then start to create the necessary resources
-- Launch configuration
+**Launch configuration**
   My AMIs: Select image previously created and Next
   Name: break-the-monolith 
 
-- Auto Scalling group 
+**Auto Scalling group**
   Group name: break-the-monolith
   Group size: start with 1
   Network: Chose the VPC
@@ -47,7 +47,8 @@ Click on Auto scaling groups option and an automatic wizard will then start to c
   Use our previously created Key pair
 
 - Create auto scaling group
-  Scaling policies: We are going to create policies following this conditions,
+**Scaling policies**
+We are going to create policies following this conditions,
   - If the CPU usage is below 70% for more than 5 minutes, add 1 instance
   - If the CPU usage is lower than 40% for more than 5 minutes, remove 1 instance
   - Create two alarms and asociate this to the ASG
@@ -56,5 +57,40 @@ Click on Auto scaling groups option and an automatic wizard will then start to c
 
    ![policies](./imgs/policies01.png)
 
-### Modifying the Auto Scaling Group
+**Modifying the Auto Scaling Group**
+Launch configuratio is read only, changes just in a new object.
+Auto Scaling group is editable. 
 
+We need to modify the Auto Scaling group because we want each instance to be registered to the target group associated with our ALB
+Target group: break-the-monolith
+Min: 2
+
+**Remove the manually created instance from the balancer**
+ELB -> Targets -> Edit -> Select Instance -> Remove
+
+At this point, the configuration of the Auto Scale is complete and you now have an application that satisfies the requirements of scalability and reliability.
+
+## Questions
+
+Is it always convenient to break a monolith into a multi-level application?
+R. In case of scaling requirements were vertical scaling does not cover the requirements or is too expensive to accomplish.
+
+What are the differences between the multi-level approach and the microservices/serverless approach?
+R. Multi-level approach is using resources always on, microservices/serverles are ondemand
+
+Can it be difficult moving from software installed in a virtual machine to as a service components? 
+R. If it is part of the existing runtimes on AWS, is just a matter of move the executable
+
+Can a load balancer manage any spike of traffic without any intervention?
+R. No, it is required to configure AutoScaling functionality
+
+Can I save money using Certificate Manager instead of a classic SSL certification authority?
+R. Sure, CM is free
+
+Why is it important to span the resources in multiple AZs?
+R. Improve the availability and failover of the application
+
+## Further reading
+
+Spring Boot, MySQL, JPA, Hibernate Restful CRUD API Tutorial: https://www.callicoder.com/spring-boot-rest-api-tutorial-with-mysql-jpa-hibernate/ the tutorial used to create our playground. 
+Serverless is cheaper, not simpler: https://medium.freecodecamp.org/serverless-is-cheaper-not-simpler-a10c4fc30e49 
