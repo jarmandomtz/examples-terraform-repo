@@ -15,10 +15,11 @@ https://github.com/yogeshraheja/EffectiveDevOpsTemplates/blob/master/helloworld-
 ## Services to use
 - Docker
 - EC2
-- ECS
+- [ECS (Summary of service)](./AWSECSCluster.md)
 - ALB
 - CodeBuild
 - CodePipeline
+
 
 ## Docker Installation
 Documentation for docker installation [here](./DockerInstallationOnUbuntu.md)
