@@ -26,7 +26,7 @@ Documentation for docker installation [here](./DockerInstallationOnUbuntu.md)
 
 ## Application dockerization
 Reference,
-- official AWS Docker image. You can read more about this at http://amzn.to/2jnmklF.
+- Official AWS Docker image. You can read more about this at http://amzn.to/2jnmklF.
 
 Steps
 - Pull alphine image from docker registry
@@ -67,23 +67,44 @@ Steps,
     --stack-name helloworld-ecr \
     --capabilities CAPABILITY_IAM \
     --template-body file://ecr-repository.yaml \
-    --parameters \ ParameterKey=RepoName,ParameterValue=helloworld
+    --parameters ParameterKey=RepoName,ParameterValue=helloworld
+{
+    "StackId": "arn:aws:cloudformation:us-east-1:309135946640:stack/helloworld-ecr/c75036e0-30cb-11ec-a660-0a9dbbfba805"
+}
 
 %> aws ecr describe-repositories
 {
     "repositories": [
         {
-            "registryId": "094507990803",
+            "repositoryArn": "arn:aws:ecr:us-east-1:309135946640:repository/helloworld",
+            "registryId": "309135946640",
             "repositoryName": "helloworld",
-            "repositoryArn": "arn:aws:ecr:us-east-1:094507990803:repository/helloworld",
-            "createdAt": 1536345671.0,
-            "repositoryUri": "094507990803.dkr.ecr.us-east-1.amazonaws.com/helloworld"
+            "repositoryUri": "309135946640.dkr.ecr.us-east-1.amazonaws.com/helloworld",
+            "createdAt": 1634641239.0,
+            "imageTagMutability": "MUTABLE",
+            "imageScanningConfiguration": {
+                "scanOnPush": false
+            },
+            "encryptionConfiguration": {
+                "encryptionType": "AES256"
+            }
         }
     ]
 }
 
 %> aws cloudformation list-exports
+{
+    "Exports": [
+        {
+            "ExportingStackId": "arn:aws:cloudformation:us-east-1:309135946640:stack/helloworld-ecr/c75036e0-30cb-11ec-a660-0a9dbbfba805",
+            "Name": "helloworld-repo",
+            "Value": "helloworld"
+        }
+    ]
+}
 ```
+
+![Private registry](./imgs/ecr01.png)
 
 ### Upload the image to ECR
 
@@ -95,30 +116,49 @@ Steps,
 
 ```js
 %> eval "$(aws ecr get-login --region us-east-1 --no-include-email )"
+WARNING! Using --password via the CLI is insecure. Use --password-stdin.
+WARNING! Your password will be stored unencrypted in /home/armando/.docker/config.json.
+Configure a credential helper to remove this warning. See
+https://docs.docker.com/engine/reference/commandline/login/#credentials-store
+
+Login Succeeded
 
 %> cd helloworld
 
 # Get url from "aws ecr describe-repositories" on repositoryUri, in example "094507990803.dkr.ecr.us-east-1.amazonaws.com/helloworld"
-%> docker tag helloworld:latest 094507990803.dkr.ecr.us-east-1.amazonaws.com/helloworld:latest
+%> docker tag helloworld:latest 309135946640.dkr.ecr.us-east-1.amazonaws.com/helloworld:latest
 
-%> docker push 094507990803.dkr.ecr.us-east-1.amazonaws.com/helloworld:latest
+%> docker push 309135946640.dkr.ecr.us-east-1.amazonaws.com/helloworld:latest
+he push refers to repository [309135946640.dkr.ecr.us-east-1.amazonaws.com/helloworld]
+6617e116c7e4: Pushed 
+...
+ebb9ae013834: Pushed 
+latest: digest: sha256:c8ab0a196e907c14c7f334fc56c838fdff937f7285cf21f128f3c572d8582b9d size: 2840
 
 %> aws ecr describe-images --repository-name helloworld
 {
     "imageDetails": [
         {
-            "imageSizeInBytes": 265821145,
-            "imageDigest": "sha256:95906ec13adf9894e4611cd37c8a06569964af0adbb035fcafa6020994675161",
+            "registryId": "309135946640",
+            "repositoryName": "helloworld",
+            "imageDigest": "sha256:c8ab0a196e907c14c7f334fc56c838fdff937f7285cf21f128f3c572d8582b9d",
             "imageTags": [
                 "latest"
             ],
-            "registryId": "094507990803",
-            "repositoryName": "helloworld",
-            "imagePushedAt": 1536346218.0
+            "imageSizeInBytes": 353822726,
+            "imagePushedAt": 1634642884.0,
+            "imageManifestMediaType": "application/vnd.docker.distribution.manifest.v2+json",
+            "artifactMediaType": "application/vnd.docker.container.image.v1+json"
         }
     ]
 }
+
 ```
+
+![Image uploaded to ERC](./imgs/ecr-image01.png)
+
+Image URI: 309135946640.dkr.ecr.us-east-1.amazonaws.com/helloworld:latest
+
 
 ### Creation of the ECS Cluster
 ECS service provides an orchestration layer. That orchestration layer is in charge of managing the life cycle of containers, including upgrading or downgrading and scaling your containers up or down. The orchestration layer also distributes all containers for every service across all instances of the cluster optimally. Finally, it also exposes a discovery mechanism that interacts with other services such as ALB and ELB to register and deregister containers.
@@ -140,51 +180,6 @@ Steps,
 ```js
 %> cat ecs-cluster-cf-template.py
 ...
-from troposphere import (
-...
-    ec2
-)
-from troposphere.autoscaling import (
-    AutoScalingGroup,
-    LaunchConfiguration,
-    ScalingPolicy
-)
-from troposphere.cloudwatch import (
-    Alarm,
-    MetricDimension
-)
-from troposphere.ecs import Cluster
-...
-t.add_resource(Cluster(
-    'ECSCluster',
-))
-t.add_resource(Role(
-    'EcsClusterRole',
-    ManagedPolicyArns=[
-        'arn:aws:iam::aws:policy/service-role/AmazonEC2RoleforSSM',
-        'arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly',
-        'arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceforEC2Role',
-        'arn:aws:iam::aws:policy/CloudWatchFullAccess'
-    ],
-    AssumeRolePolicyDocument={
-        'Version': '2012-10-17',
-        'Statement': [{
-            'Action': 'sts:AssumeRole',
-            'Principal': {'Service': 'ec2.amazonaws.com'},
-            'Effect': 'Allow',
-        }]
-    }
-))
-...
-t.add_resource(AutoScalingGroup(
-    'ECSAutoScalingGroup',
-    DesiredCapacity='1',
-    MinSize='1',
-    MaxSize='5',
-    VPCZoneIdentifier=Ref("PublicSubnet"),
-    LaunchConfigurationName=Ref('ContainerInstances'),
-))
-
 states = {
     "High": {
         "threshold": "75",
@@ -250,11 +245,17 @@ for reservation in {"CPU", "Memory"}:
     --stack-name staging-cluster \
     --capabilities CAPABILITY_IAM \
     --template-body file://ecs-cluster.yaml \
-    --parameters \             
-    ParameterKey=KeyPair,ParameterValue=EffectiveDevOpsAWS \     
-    ParameterKey=VpcId,ParameterValue=vpc-e2f5139f \
-    ParameterKey=PublicSubnet,ParameterValue=subnet-29984808\\,subnet-67558238\\,subnet-e3445ddd\\,subnet-6a0c9627\\,subnet-586be756\\,subnet-5ec70d38
+    --parameters ParameterKey=KeyPair,ParameterValue=EffectiveDevOpsAWS \
+                 ParameterKey=VpcId,ParameterValue=vpc-e2f5139f \
+                 ParameterKey=PublicSubnet,ParameterValue=subnet-29984808\\,subnet-67558238\\,subnet-e3445ddd\\,subnet-6a0c9627\\,subnet-586be756\\,subnet-5ec70d38
+{
+    "StackId": "arn:aws:cloudformation:us-east-1:309135946640:stack/staging-cluster/87a82860-30d3-11ec-8453-0e2917a1b1bd"
+}
+
 ```
+
+![Cluster created](./imgs/ecs-clustercreated01.png)
+
 **ALB**
 
 ```js
@@ -304,11 +305,11 @@ t.add_resource(elb.TargetGroup(
     --capabilities CAPABILITY_IAM \
     --template-body file://helloworld-ecs-alb.yaml
 {
-    "StackId": "arn:aws:cloudformation:us-east-        
-     1:094507990803:stack/staging-alb/4929fee0-b2d4-11e8-825f-
-     50fa5f2588d2"
+    "StackId": "arn:aws:cloudformation:us-east-1:309135946640:stack/staging-alb/893dd1a0-30d5-11ec-902f-1229675c6295"
 }
 ```
+
+![ALB Created](./imgs/ecr-albcreated01.png)
 
 **Container** or ECS Service resource
 
@@ -320,10 +321,6 @@ Steps,
 
 ```js
 %> cat helloworld-ecs-service-cf-template.py
-from troposphere.ecs import (
-    TaskDefinition,
-    ContainerDefinition
-)
 ...
 t.add_resource(TaskDefinition(
     "task",
@@ -347,31 +344,6 @@ t.add_resource(TaskDefinition(
     ],
 ))
 ...
-t.add_resource(ecs.Service(
-    "service",
-    Cluster=ImportValue(
-        Join(
-            "-",
-            [Select(0, Split("-", Ref("AWS::StackName"))),
-                "cluster-id"]
-        )
-    ),
-    DesiredCount=1,
-    TaskDefinition=Ref("task"),
-    LoadBalancers=[ecs.LoadBalancer(
-        ContainerName="helloworld",
-        ContainerPort=3000,
-        TargetGroupArn=ImportValue(
-            Join(
-                "-",
-                [Select(0, Split("-", Ref("AWS::StackName"))),
-                    "alb-target-group"]
-            ),
-        ),
-    )],
-    Role=Ref("ServiceRole")
-))
-...
 
 %> python helloworld-ecs-service-cf-template.py > helloworld-ecs-service.yaml
 
@@ -380,28 +352,41 @@ t.add_resource(ecs.Service(
     --capabilities CAPABILITY_IAM \
     --template-body file://helloworld-ecs-service.yaml \
     --parameters ParameterKey=Tag,ParameterValue=latest
+{
+    "StackId": "arn:aws:cloudformation:us-east-1:309135946640:stack/staging-helloworld-service/8f622030-30d6-11ec-9046-0eca632f4781"
+}
 
 %> aws cloudformation describe-stacks \
     --stack-name staging-alb \
     --query 'Stacks[0].Outputs'
 [
     {
-        "Description": "TargetGroup",
-        "ExportName": "staging-alb-target-group",
         "OutputKey": "TargetGroup",
-        "OutputValue": "arn:aws:elasticloadbalancing:us-east-1:094507990803:targetgroup/stagi-Targe-ZBW30U7GT7DX/329afe507c4abd4d"
+        "OutputValue": "arn:aws:elasticloadbalancing:us-east-1:309135946640:targetgroup/stagi-Targe-FFSLNV3SK8JU/fbf6c40579d4b2b3",
+        "Description": "TargetGroup",
+        "ExportName": "staging-alb-target-group"
     },
     {
-        "Description": "Helloworld URL",
         "OutputKey": "URL",
-        "OutputValue": "http://stagi-LoadB-122Z9ZDMCD68X-1452710042.us-east-1.elb.amazonaws.com:3000"
+        "OutputValue": "http://stagi-LoadB-LJUJU4M7RJSZ-1539941255.us-east-1.elb.amazonaws.com:3000",
+        "Description": "Helloworld URL"
     }
 ]
 
-%> curl http://stagi-LoadB-122Z9ZDMCD68X-1452710042.us-east-1.elb.amazonaws.com:3000
+
+%> curl http://stagi-LoadB-LJUJU4M7RJSZ-1539941255.us-east-1.elb.amazonaws.com:3000
 Hello World
 
 ```
+
+![ECS Task created](imgs/ecr-taskcreated01.png)
+![ECS Task created](imgs/ecs-taskcreated02.png)
+
+![ECS Service created](imgs/ecr-servicecreated01.png)
+![ECS Service created](imgs/ecs-servicecreated02.png)
+
+![ECS Instance usage](imgs/ecs-instanceusage01.png)
+
 
 ## Updating deployment on ECS containers
 
@@ -416,19 +401,59 @@ Steps,
 Instances should be destroyed and recreated on the current TargetGroup using the new tag of the image
 
 ```js
-%> eval "$(aws ecr get-login --region us-east-1 --no-include- email)" 
+%> eval "$(aws ecr get-login --region us-east-1 --no-include-email)" 
 
-%> docker build -t helloworld 
+%> docker build -t helloworld .
 
-%> docker tag helloworld 094507990803.dkr.ecr.us-east-1.amazonaws.com/helloworld:foobar
+%> docker tag helloworld 309135946640.dkr.ecr.us-east-1.amazonaws.com/helloworld:foobar
 
-%> docker push 094507990803.dkr.ecr.us-east-1.amazonaws.com/helloworld:foobar
+%> docker push 309135946640.dkr.ecr.us-east-1.amazonaws.com/helloworld:foobar
+The push refers to repository [309135946640.dkr.ecr.us-east-1.amazonaws.com/helloworld]
+123e4f70b9af: Pushed 
+f2232579905e: Pushed 
+b00a6a0c3766: Layer already exists 
+...
+foobar: digest: sha256:44a1b6f1bbb88a480b0112b1efab174e5df5c613b46703dacbad4d81905a074b size: 2840
 
 %> aws cloudformation update-stack \
     --stack-name staging-helloworld-service \
     --capabilities CAPABILITY_IAM \
     --template-body file://helloworld-ecs-service.yaml \
-    --parameters \ 
-      ParameterKey=Tag,ParameterValue=foobar
+    --parameters ParameterKey=Tag,ParameterValue=foobar
+{
+    "StackId": "arn:aws:cloudformation:us-east-1:309135946640:stack/staging-helloworld-service/8f622030-30d6-11ec-9046-0eca632f4781"
+}
+
+```
+
+![ECS Task created](./imgs/ecs-taskcreated03.png)
+![ECS Task created](./imgs/ecs-container-deregistration01.png)
+
+## Delete environment
+
+For delete the complete environment, just execute the script
+
+```js
+%> ./stopEnv.sh
+Deleting ECS Service ...
+ECS Service deleted 
+
+Deleting ALB ...
+ALB deleted 
+
+Deleting ECS Cluster ...
+ECS Cluster deleted 
+
+Deleting images on ECR ...
+Deleting "latest"
+"latest" deleted ...
+Deleting "fromecs"
+"fromecs" deleted ...
+Deleting "foobar"
+"foobar" deleted ...
+ECR images deleted
+
+Deleting ECR ...
+ECR deleted 
 
 ```
