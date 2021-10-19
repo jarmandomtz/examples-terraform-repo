@@ -431,6 +431,12 @@ foobar: digest: sha256:44a1b6f1bbb88a480b0112b1efab174e5df5c613b46703dacbad4d819
 
 ## Delete environment
 
+If required, undo changes on helloworld app
+
+```js
+helloworld %>git checkout -f
+```
+
 For delete the complete environment, just execute the script
 
 ```js
