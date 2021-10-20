@@ -20,6 +20,14 @@ https://github.com/yogeshraheja/EffectiveDevOpsTemplates/blob/master/helloworld-
 - CodeBuild
 - CodePipeline
 
+### ECS with Fargate example reference,
+https://github.com/1Strategy/fargate-cloudformation-example/blob/master/fargate.yaml
+
+Changes required,
+- AWS::ECS::Service needs to specify LaunchType: FARGATE
+- AWS::ECS::TaskDefinition needs to specify RequiresCompatibilities: - FARGATE
+
+All Network configuration previously was added to EC2 instance now is part of the AWS::ECS::Service
 
 ## Docker Installation
 Documentation for docker installation [here](./DockerInstallationOnUbuntu.md)
@@ -50,6 +58,8 @@ In a general way we require,
 - Create a Container 
   - Using the Image from the Registry and deploying the image on the ECS Cluster
   - Test the Container using the Load balancer
+All this steps were automate on [startEnv.sh](./startEnv.sh) shell script.
+
 
 Next we can see deail step by step,
 
