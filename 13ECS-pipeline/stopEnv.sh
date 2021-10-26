@@ -1,5 +1,10 @@
 #!/bin/bash
 echo "**************************************PIPELINE**************************************************"
+echo "Deleting CodePipeline pipeline ..."
+aws cloudformation delete-stack --stack-name helloworld-codepipeline
+aws cloudformation wait stack-delete-complete --stack-name helloworld-codepipeline
+echo "Deleting CodePipeline pipeline ..."
+
 echo "Deleting CodeBuild pipeline ..."
 aws cloudformation delete-stack --stack-name helloworld-codebuild
 aws cloudformation wait stack-delete-complete --stack-name helloworld-codebuild

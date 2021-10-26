@@ -94,10 +94,18 @@ curl $serviceURL
 echo "Tests ended ..."
 
 echo "**********************************************PIPELINE****************************************************************"
-echo "Creating pipeline ..."
+echo "Creating codebuild ..."
 aws cloudformation create-stack \
     --stack-name helloworld-codebuild \
     --capabilities CAPABILITY_IAM \
     --template-body file://helloworld-codebuild.yaml
 aws cloudformation wait stack-create-complete --stack-name helloworld-codebuild
-echo "Pipeline created ..."
+echo "CodeBuild created ..."
+
+echo "Creating CodePipeline ..."
+aws cloudformation create-stack \
+    --stack-name helloworld-codepipeline \
+    --capabilities CAPABILITY_NAMED_IAM \
+    --template-body file://helloworld-codepipeline.yaml
+%> aws cloudformation wait stack-create-complete --stack-name helloworld-codepipeline
+echo "CodePipeline created ..."

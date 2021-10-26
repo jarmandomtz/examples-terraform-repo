@@ -89,20 +89,56 @@ Uses a **buildspec** file for the image creation, this file has sections,
 
 %> aws cloudformation delete-stack --stack-name helloworld-codebuild
 %> aws cloudformation wait stack-delete-complete --stack-name helloworld-codebuild
-
-#Instructions added to scripts startEnv.sh and stopEnv.sh
 ```
+
+Instructions added to scripts [startEnv.sh](./startEnv.sh) and [stopEnv.sh](./stopEnv.sh) 
 
 ## Creating deployment pipeline with CodePipeline
 
 For this action, CloudFormation script "helloworld-ecs-service.yaml" needs to be added to App source code project "helloworld".
 "helloworld-ecs-service.yaml" creates our deployment/container on ECS using an specific Docker tag.
 
+### Automated Actions,
+- Add Container creation CF template to App source code
+- Create CodePipline CF template 
+  - Create S3 bucket
+  - Define CodePipeline service role
+  - Define Deploy stages role
+  - Define Pipeline and Stages
+    - Source stage: Download code and build App artifact, **No credentials specified, don't want to store clear in github**
+    - Build stage: Call the CodeBuild stack "helloworld-codebuild", store Artifact tag.json file on BuildOutput
+    - Staging stage: Call "helloworld-ecs-service.yaml" CF script for deploy the new image tag
+    - Approval stage: Manual approval
+    - Production stage: Call "helloworld-ecs-service.yaml" CF script for deploy the new image tag
+
+### Manual Actions,
+- Specify github credential once Pipeline created on AWS CodePipeline console
+  - Select pipeline created, Edit, Click Pen icon, Click Connect to github right-hand-side menu
+  - Select helloworld project and dockerized branch, Save
+
+** CAPABILITY_NAMED_IAM used because defining custom names at the IAM level
+
 ```js
+#ON HELLOWORLD
 helloworld %> git branch
 * dockerized
 ...
 helloworld %> ls cf-templates
 helloworld-ecs-service-cf-template.py
 helloworld-ecs-service.yaml
+
+#ON EXAPLES PROJECT
+%> python helloworld-codepipeline-cf-template.py > helloworld-codepipeline.yaml
+
+%> aws cloudformation create-stack \
+    --stack-name helloworld-codepipeline \
+    --capabilities CAPABILITY_NAMED_IAM \
+    --template-body file://helloworld-codepipeline.yaml
+
+%> aws cloudformation wait stack-create-complete --stack-name helloworld-codepipeline
+
+%> aws cloudformation delete-stack --stack-name helloworld-codepipeline
+%> aws cloudformation wait stack-delete-complete --stack-name helloworld-codepipeline
+```
+
 
