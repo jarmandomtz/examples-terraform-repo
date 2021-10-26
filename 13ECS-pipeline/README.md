@@ -65,10 +65,17 @@ Instead of continue using public npm image and upload it to the ECR, we are goin
 
 CodeBuild
 Uses a **buildspec** file for the image creation, this file has sections,
-- pre_build:  Steps previous to build the image
-- build:      Image building
-- post_build: Push image to ECR
-- artifacts:  File to upload to S3
+- pre_build:  Steps previous to build the image: 
+  - Get pipeline state
+  - Get pipeline execution id
+  - Create build.json file with the build tag
+  - Login to ECR
+- build:      Image building: "docker build ..."
+- post_build
+  - Push image to ECR
+  - Identify image on ECR
+  - Tag the image to latest
+- artifacts:  Files to upload to S3: build.json
 
 ```js
 %> python helloworld-codebuild-cf-template.py > helloworld-codebuild.yaml
@@ -82,4 +89,20 @@ Uses a **buildspec** file for the image creation, this file has sections,
 
 %> aws cloudformation delete-stack --stack-name helloworld-codebuild
 %> aws cloudformation wait stack-delete-complete --stack-name helloworld-codebuild
+
+#Instructions added to scripts startEnv.sh and stopEnv.sh
 ```
+
+## Creating deployment pipeline with CodePipeline
+
+For this action, CloudFormation script "helloworld-ecs-service.yaml" needs to be added to App source code project "helloworld".
+"helloworld-ecs-service.yaml" creates our deployment/container on ECS using an specific Docker tag.
+
+```js
+helloworld %> git branch
+* dockerized
+...
+helloworld %> ls cf-templates
+helloworld-ecs-service-cf-template.py
+helloworld-ecs-service.yaml
+

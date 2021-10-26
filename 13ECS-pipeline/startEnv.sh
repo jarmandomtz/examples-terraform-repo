@@ -92,3 +92,12 @@ serviceURL=$(aws cloudformation describe-stacks \
 echo "curl $serviceURL"
 curl $serviceURL
 echo "Tests ended ..."
+
+echo "**********************************************PIPELINE****************************************************************"
+echo "Creating pipeline ..."
+aws cloudformation create-stack \
+    --stack-name helloworld-codebuild \
+    --capabilities CAPABILITY_IAM \
+    --template-body file://helloworld-codebuild.yaml
+aws cloudformation wait stack-create-complete --stack-name helloworld-codebuild
+echo "Pipeline created ..."
