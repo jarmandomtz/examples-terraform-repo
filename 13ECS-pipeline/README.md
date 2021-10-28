@@ -172,6 +172,7 @@ Once pipeline created, just connect to github and execute it, should be executed
 
 ## Troubleshooting
 
+### Insufficient permissions when executing CodePipeline pipeline
 **Error**: Insufficient permissions
 Unable to use Connection: arn:aws:codestar-connections:us-east-1:309135946640:connection/42122dee-fb1f-4d5f-b859-5e4ebbc323ab. The provided role does not have sufficient permissions.
 
@@ -194,6 +195,7 @@ AWS Console -> IAM Console -> Roles -> Select role -> Select policy -> Edit poli
 
 Save and execute the pipeline again using "Retry" button
 
+### Repository does not exist in the registry, when creating Image
 **Error**: name unknown: The repository with name 'helloworld-aws' does not exist in the registry with id '309135946640'
 
 [Container] 2021/10/28 12:08:20 Command did not exit successfully docker push "$(cat /tmp/build_tag.txt)" exit status 1
@@ -213,11 +215,24 @@ aws cloudformation create-stack \
 aws cloudformation wait stack-create-complete --stack-name helloworld-ecr-aws
 ```
 
-**ERROR** Stopped | CannotPullContainerError: Error response from daemon: manifest for 309135946640.dkr.ecr.us-east-1.amazonaws.com/helloworld:90aa70e42ab99116193662d301c8ee2a592d271e not found: manifest unknown: Requested image not found
+### Requested image not found when Pushing image to Registry
+**Error** Stopped | CannotPullContainerError: Error response from daemon: manifest for 309135946640.dkr.ecr.us-east-1.amazonaws.com/helloworld:90aa70e42ab99116193662d301c8ee2a592d271e not found: manifest unknown: Requested image not found
 
 **Analysis**: Script which is creating the container is helloworld/cf-template/helloworld-ecs-service.yaml
 Here, it is using exported variable "helloworld-repo" for recover repo name from ECR stack
 - Original variable used:  helloworld-repo=helloworld
 - Variable should be used: helloworld-aws-repo=helloworld-aws
 
+**Solution**
 So needed to change value on script, commit and push changes to helloworld and execute again stage on pipeline
+
+### Error because of permissions when trying to delete service stack
+**Error** Error when trying to delete Service, HelloWorld Role on Delete policy does not have permissions for delete the Stack
+
+**Analysis** Reviewd and Roles does not exists
+
+**Solution** Create the role
+Entity: CloudFormation
+Permissions
+- EC2 Full permissions
+- ECS Full permissions
