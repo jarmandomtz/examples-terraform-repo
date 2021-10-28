@@ -3,7 +3,7 @@ echo "**************************************PIPELINE****************************
 echo "Deleting CodePipeline pipeline ..."
 aws cloudformation delete-stack --stack-name helloworld-codepipeline
 aws cloudformation wait stack-delete-complete --stack-name helloworld-codepipeline
-echo "Deleting CodePipeline pipeline ..."
+echo "CodePipeline pipeline deleted ..."
 
 echo "Deleting CodeBuild pipeline ..."
 aws cloudformation delete-stack --stack-name helloworld-codebuild
@@ -14,19 +14,19 @@ echo " "
 echo "**************************************PRODUCTION**************************************************"
 echo "Deleting ECS Service ..."
 aws cloudformation delete-stack --stack-name production-helloworld-service 
-aws cloudformation wait stack-delete-complete --stack-name staging-helloworld-service
+aws cloudformation wait stack-delete-complete --stack-name production-helloworld-service
 echo "ECS Service deleted "
 echo " "
 
 echo "Deleting ALB ..."
-aws cloudformation delete-stack --stack-name staproductionging-alb 
-aws cloudformation wait stack-delete-complete --stack-name staging-alb
+aws cloudformation delete-stack --stack-name production-alb 
+aws cloudformation wait stack-delete-complete --stack-name production-alb
 echo "ALB deleted "
 echo " "
 
 echo "Deleting ECS Cluster ..."
 aws cloudformation delete-stack --stack-name production-cluster 
-aws cloudformation wait stack-delete-complete --stack-name staging-cluster
+aws cloudformation wait stack-delete-complete --stack-name production-cluster
 echo "ECS Cluster deleted "
 echo " "
 
@@ -68,5 +68,4 @@ echo " "
 echo "Deleting ECR ..."
 aws cloudformation delete-stack --stack-name helloworld-ecr-aws 
 aws cloudformation wait stack-delete-complete --stack-name helloworld-ecr-aws
-
 echo "ECR deleted "
