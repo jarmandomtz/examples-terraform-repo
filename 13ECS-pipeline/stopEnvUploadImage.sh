@@ -1,15 +1,4 @@
 #!/bin/bash
-echo "**************************************PIPELINE**************************************************"
-echo "Deleting CodePipeline pipeline ..."
-aws cloudformation delete-stack --stack-name helloworld-codepipeline
-aws cloudformation wait stack-delete-complete --stack-name helloworld-codepipeline
-echo "Deleting CodePipeline pipeline ..."
-
-echo "Deleting CodeBuild pipeline ..."
-aws cloudformation delete-stack --stack-name helloworld-codebuild
-aws cloudformation wait stack-delete-complete --stack-name helloworld-codebuild
-echo "CodeBuild pipeline deleted ..."
-echo " "
 
 echo "**************************************PRODUCTION**************************************************"
 echo "Deleting ECS Service ..."
@@ -56,17 +45,17 @@ echo " "
 #d175f13b-1797-6ac1-78af-0c9985dd226f, HandlerErrorCode: GeneralServiceException)
 
 echo "Deleting images on ECR ..."
-for i in $(aws ecr list-images --repository-name helloworld-aws | grep imageTag | awk '{ print $2}') 
+for i in $(aws ecr list-images --repository-name helloworld | grep imageTag | awk '{ print $2}') 
 do
   echo "Deleting $i ..."
-  aws ecr batch-delete-image --repository-name helloworld-aws --image-ids imageTag=$i
+  aws ecr batch-delete-image --repository-name helloworld --image-ids imageTag=$i
   echo "$i deleted"
 done
 echo "ECR images deleted"
 echo " "
 
 echo "Deleting ECR ..."
-aws cloudformation delete-stack --stack-name helloworld-ecr-aws 
-aws cloudformation wait stack-delete-complete --stack-name helloworld-ecr-aws
+aws cloudformation delete-stack --stack-name helloworld-ecr 
+aws cloudformation wait stack-delete-complete --stack-name helloworld-ecr
 
 echo "ECR deleted "

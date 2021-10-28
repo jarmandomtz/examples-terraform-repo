@@ -112,11 +112,17 @@ For this action, CloudFormation script "helloworld-ecs-service.yaml" needs to be
     - Production stage: Call "helloworld-ecs-service.yaml" CF script for deploy the new image tag
 
 ### Manual Actions,
-- Specify github credential once Pipeline created on AWS CodePipeline console
-  - Select pipeline created, Edit, Click Pen icon, Click Connect to github right-hand-side menu
+- Specify github credentials once Pipeline created on AWS CodePipeline console
+  - Select pipeline created, Edit, Select stage, Edit, Click on gray icon, Click Connect to github right-hand-side menu
+    - Action provider: Github (version 2)
+    - Connection: esausi
+    - Repository Name: helloworld
+    - Branch name: dockerized
   - Select helloworld project and dockerized branch, Save
 
 ** CAPABILITY_NAMED_IAM used because defining custom names at the IAM level
+
+## Code
 
 ```js
 #ON HELLOWORLD
@@ -141,4 +147,77 @@ helloworld-ecs-service.yaml
 %> aws cloudformation wait stack-delete-complete --stack-name helloworld-codepipeline
 ```
 
+## Example execution
 
+Files for previous example,
+- startEnvUploadImage.sh
+- testEnv.sh
+- stopEnvUploadImage.sh
+
+Create ECR, Upload the image, create container and ALB
+
+File for current example,
+- startEnv.sh
+- testEnv.sh
+- stopEnv.sh
+
+Create ECR, Create CodeBuild task and CodePipeline pipeline, create container using CodeBuild and ALB
+
+
+Once pipeline created, just connect to github and execute it, should be executed the pipeline until manual approval, once approved, should deploy to production as follow,
+![Successful pipeline execution](./imgs/codepipeline01.png)
+
+
+
+
+## Troubleshooting
+
+**Error**: Insufficient permissions
+Unable to use Connection: arn:aws:codestar-connections:us-east-1:309135946640:connection/42122dee-fb1f-4d5f-b859-5e4ebbc323ab. The provided role does not have sufficient permissions.
+
+**Analysis**: 
+Reference: https://stackoverflow.com/questions/64298865/aws-codepipeline-source-action-has-insufficient-permissions-for-codestar-connec
+- Role used by codepipeline: AWS Console -> CodePipline Console -> Pipeline -> Select pipeline -> Settings: Service role ARN
+
+**Solution**
+- Add permisions to the role to use the connection
+AWS Console -> IAM Console -> Roles -> Select role -> Select policy -> Edit policy -> JSON -> Go to the end and add
+
+```js
+,
+        {
+            "Action": "codestar-connections:UseConnection",
+            "Resource": "arn:aws:codestar-connections:us-east-1:309135946640:connection/42122dee-fb1f-4d5f-b859-5e4ebbc323ab",
+            "Effect": "Allow"
+        }
+```
+
+Save and execute the pipeline again using "Retry" button
+
+**Error**: name unknown: The repository with name 'helloworld-aws' does not exist in the registry with id '309135946640'
+
+[Container] 2021/10/28 12:08:20 Command did not exit successfully docker push "$(cat /tmp/build_tag.txt)" exit status 1
+[Container] 2021/10/28 12:08:20 Phase complete: POST_BUILD State: FAILED
+[Container] 2021/10/28 12:08:20 Phase context status code: COMMAND_EXECUTION_ERROR Message: Error while executing command: docker push "$(cat /tmp/build_tag.txt)". Reason: exit status 1
+
+**Analysis**: The only existing ECR is "helloworld", so it is needed to create a new one called "helloworld-aws"
+
+**Solution**: Create the new repo
+
+```js
+aws cloudformation create-stack \
+    --stack-name helloworld-ecr-aws \
+    --capabilities CAPABILITY_IAM \
+    --template-body file://ecr-repository.yaml \
+    --parameters ParameterKey=RepoName,ParameterValue=helloworld-aws
+aws cloudformation wait stack-create-complete --stack-name helloworld-ecr-aws
+```
+
+**ERROR** Stopped | CannotPullContainerError: Error response from daemon: manifest for 309135946640.dkr.ecr.us-east-1.amazonaws.com/helloworld:90aa70e42ab99116193662d301c8ee2a592d271e not found: manifest unknown: Requested image not found
+
+**Analysis**: Script which is creating the container is helloworld/cf-template/helloworld-ecs-service.yaml
+Here, it is using exported variable "helloworld-repo" for recover repo name from ECR stack
+- Original variable used:  helloworld-repo=helloworld
+- Variable should be used: helloworld-aws-repo=helloworld-aws
+
+So needed to change value on script, commit and push changes to helloworld and execute again stage on pipeline

@@ -9,7 +9,7 @@ Resources:
         ComputeType: BUILD_GENERAL1_SMALL
         EnvironmentVariables:
           - Name: REPOSITORY_NAME
-            Value: helloworld
+            Value: helloworld-aws
           - Name: REPOSITORY_URI
             Value: !Join
               - ''
@@ -18,7 +18,7 @@ Resources:
                 - !Ref 'AWS::Region'
                 - .amazonaws.com
                 - /
-                - helloworld
+                - helloworld-aws
         Image: aws/codebuild/docker:1.12.1
         Type: LINUX_CONTAINER
       Name: HelloWorldContainer

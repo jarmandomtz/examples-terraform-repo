@@ -53,7 +53,7 @@ environment = Environment(
     Image='aws/codebuild/docker:1.12.1',
     Type='LINUX_CONTAINER',
     EnvironmentVariables=[
-        {'Name': 'REPOSITORY_NAME', 'Value': 'helloworld'},
+        {'Name': 'REPOSITORY_NAME', 'Value': 'helloworld-aws'},
         {'Name': 'REPOSITORY_URI',
             'Value': Join("", [
                 Ref("AWS::AccountId"),
@@ -61,7 +61,7 @@ environment = Environment(
                 Ref("AWS::Region"),
                 ".amazonaws.com",
                 "/",
-                "helloworld"])},
+                "helloworld-aws"])},
     ],
 )
 

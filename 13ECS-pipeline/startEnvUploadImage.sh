@@ -1,13 +1,24 @@
 #!/bin/bash
 
-echo "Creating ECR Registry for AWS image ..."
+echo "Creating ECR Registry ..."
 aws cloudformation create-stack \
-    --stack-name helloworld-ecr-aws \
+    --stack-name helloworld-ecr \
     --capabilities CAPABILITY_IAM \
     --template-body file://ecr-repository.yaml \
-    --parameters ParameterKey=RepoName,ParameterValue=helloworld-aws
-aws cloudformation wait stack-create-complete --stack-name helloworld-ecr-aws
-echo "ECR Registry for AWS image Created ..."
+    --parameters ParameterKey=RepoName,ParameterValue=helloworld
+aws cloudformation wait stack-create-complete --stack-name helloworld-ecr
+echo "ECR Registry Created ..."
+echo ""
+
+echo "**********************************************UPLOAD IMAGE***********************************************************"
+
+#NEEDS TO BE VALIDATED, IT SUPPOSED NOT TO REQUIRE CREATE AN IMAGE LOCALY AND UPLOAD BECAUSE CODEBUILD IS GOING TO CREATE IT
+
+echo "Uploading image to ECR ..."
+eval "$(aws ecr get-login --region us-east-1 --no-include-email )"
+#docker tag helloworld:latest 309135946640.dkr.ecr.us-east-1.amazonaws.com/helloworld:latest
+docker push 309135946640.dkr.ecr.us-east-1.amazonaws.com/helloworld:latest
+echo "Image uploaded ..."
 echo ""
 
 echo "**********************************************STAGING****************************************************************"
@@ -32,6 +43,26 @@ aws cloudformation wait stack-create-complete --stack-name staging-alb
 echo "ALB created ..."
 echo ""
 
+echo "Creating container ..."
+aws cloudformation create-stack \
+    --stack-name staging-helloworld-service \
+    --capabilities CAPABILITY_IAM \
+    --template-body file://helloworld-ecs-service.yaml \
+    --parameters ParameterKey=Tag,ParameterValue=latest
+aws cloudformation wait stack-create-complete --stack-name staging-helloworld-service
+echo "Container created ..."
+echo ""
+
+echo "Testing ..."
+serviceURL=$(aws cloudformation describe-stacks \
+    --stack-name staging-alb \
+    --query 'Stacks[0].Outputs' | grep us-east-1.elb.amazonaws.com:3000 | awk 'BEGIN { FS = " " } ; { print $2}' | sed 's/\"//' | sed 's/\"//' | sed 's/,//')
+#echo "aws cloudformation describe-stacks --stack-name staging-alb --query 'Stacks[0].Outputs' | grep us-east-1.elb.amazonaws.com:3000 | awk 'BEGIN { FS = " " } ; { print $2}' | sed 's/\"//' | sed 's/,//'"
+echo "curl $serviceURL"
+curl $serviceURL
+echo "Tests ended ..."
+
+
 echo "**********************************************PRODUCTION****************************************************************"
 echo "Creating cluster ..."
 aws cloudformation create-stack \
@@ -54,41 +85,22 @@ aws cloudformation wait stack-create-complete --stack-name production-alb
 echo "ALB created ..."
 echo ""
 
-echo "**********************************************PIPELINE****************************************************************"
-echo "Creating codebuild ..."
+echo "Creating container ..."
 aws cloudformation create-stack \
-    --stack-name helloworld-codebuild \
+    --stack-name production-helloworld-service \
     --capabilities CAPABILITY_IAM \
-    --template-body file://helloworld-codebuild.yaml
-aws cloudformation wait stack-create-complete --stack-name helloworld-codebuild
-echo "CodeBuild created ..."
+    --template-body file://helloworld-ecs-service.yaml \
+    --parameters ParameterKey=Tag,ParameterValue=latest
+aws cloudformation wait stack-create-complete --stack-name production-helloworld-service
+echo "Container created ..."
+echo ""
 
-echo "Creating CodePipeline ..."
-aws cloudformation create-stack \
-    --stack-name helloworld-codepipeline \
-    --capabilities CAPABILITY_NAMED_IAM \
-    --template-body file://helloworld-codepipeline.yaml
-aws cloudformation wait stack-create-complete --stack-name helloworld-codepipeline
-echo "CodePipeline created ..."
-
-echo "**********************************************TESTING THE SERVICE****************************************************************"
-
-echo "Testing Staging ..."
-serviceURL=$(aws cloudformation describe-stacks \
-    --stack-name staging-alb \
-    --query 'Stacks[0].Outputs' | grep us-east-1.elb.amazonaws.com:3000 | awk 'BEGIN { FS = " " } ; { print $2}' | sed 's/\"//' | sed 's/\"//' | sed 's/,//')
-#echo "aws cloudformation describe-stacks --stack-name staging-alb --query 'Stacks[0].Outputs' | grep us-east-1.elb.amazonaws.com:3000 | awk 'BEGIN { FS = " " } ; { print $2}' | sed 's/\"//' | sed 's/,//'"
-echo "curl $serviceURL"
-curl $serviceURL
-echo "Staging Tests ended ..."
-
-
-echo "Testing Production ..."
+echo "Testing ..."
 serviceURL=$(aws cloudformation describe-stacks \
     --stack-name production-alb \
     --query 'Stacks[0].Outputs' | grep us-east-1.elb.amazonaws.com:3000 | awk 'BEGIN { FS = " " } ; { print $2}' | sed 's/\"//' | sed 's/\"//' | sed 's/,//')
 #echo "aws cloudformation describe-stacks --stack-name production-alb --query 'Stacks[0].Outputs' | grep us-east-1.elb.amazonaws.com:3000 | awk 'BEGIN { FS = " " } ; { print $2}' | sed 's/\"//' | sed 's/,//'"
 echo "curl $serviceURL"
 curl $serviceURL
-echo "Production Tests ended ..."
+echo "Tests ended ..."
 
