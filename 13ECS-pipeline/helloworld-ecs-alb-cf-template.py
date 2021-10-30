@@ -13,8 +13,11 @@ from troposphere import (
     Split,
     Sub,
     Template,
-    ec2
+    ec2,
+    Parameter
 )
+
+from troposphere.route53 import RecordSetType
 
 t = Template()
 
@@ -87,6 +90,36 @@ t.add_resource(elb.Listener(
     )]
 ))
 
+hostedzone = t.add_parameter(
+    Parameter(
+        "HostedZone",
+        Description="The DNS name of an existing Amazon Route 53 hosted zone",
+        Type="String",
+    )
+)
+
+dnsPrefix = t.add_parameter(
+    Parameter(
+        "DnsPrefix",
+        Description="The DNS prefix name for the Load Balancer DNS name",
+        Type="String",
+    )
+)
+
+myDNSRecord = t.add_resource(
+    RecordSetType(
+        "myDNSRecord",
+        HostedZoneName=Join("", [Ref(hostedzone), "."]),
+        Comment="DNS name for my loadbalancer.",
+        Name=Join(
+            "", [Ref(dnsPrefix), ".", Ref(hostedzone), "."]
+        ),
+        Type="CNAME",
+        TTL="900",
+        ResourceRecords=[GetAtt("LoadBalancer", "DNSName")],
+    )
+)
+
 t.add_output(Output(
     "TargetGroup",
     Description="TargetGroup",
@@ -98,6 +131,12 @@ t.add_output(Output(
     "URL",
     Description="Helloworld URL",
     Value=Join("", ["http://", GetAtt("LoadBalancer", "DNSName"), ":3000"])
+))
+
+t.add_output(Output(
+    "URLRoute53",
+    Description="Helloworld URL using DNS Zone",
+    Value=Join("", ["http://", Ref(myDNSRecord), ":3000"])
 ))
 
 print(t.to_yaml())

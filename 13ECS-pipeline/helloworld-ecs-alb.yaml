@@ -12,6 +12,20 @@ Outputs:
       - - http://
         - !GetAtt 'LoadBalancer.DNSName'
         - :3000
+  URLRoute53:
+    Description: Helloworld URL using DNS Zone
+    Value: !Join
+      - ''
+      - - http://
+        - !Ref 'myDNSRecord'
+        - :3000
+Parameters:
+  DnsPrefix:
+    Description: The DNS prefix name for the Load Balancer DNS name
+    Type: String
+  HostedZone:
+    Description: The DNS name of an existing Amazon Route 53 hosted zone
+    Type: String
 Resources:
   Listener:
     Properties:
@@ -79,4 +93,22 @@ Resources:
                 - !Ref 'AWS::StackName'
             - cluster-vpc-id
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
+  myDNSRecord:
+    Properties:
+      Comment: DNS name for my loadbalancer.
+      HostedZoneName: !Join
+        - ''
+        - - !Ref 'HostedZone'
+          - .
+      Name: !Join
+        - ''
+        - - !Ref 'DnsPrefix'
+          - .
+          - !Ref 'HostedZone'
+          - .
+      ResourceRecords:
+        - !GetAtt 'LoadBalancer.DNSName'
+      TTL: '900'
+      Type: CNAME
+    Type: AWS::Route53::RecordSet
 

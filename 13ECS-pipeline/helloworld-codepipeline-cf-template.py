@@ -61,6 +61,7 @@ t.add_resource(Role(
                     {"Effect": "Allow", "Action": "ecs:*", "Resource": "*"},
                     {"Effect": "Allow", "Action": "iam:*", "Resource": "*"},
                     {"Effect": "Allow", "Action": "s3:*", "Resource": "*"},
+                    {"Effect": "Allow", "Action": "codestar-connections:UseConnection", "Resource": "arn:aws:codestar-connections:us-east-1:309135946640:connection/*"},
                 ],
             }
         ),
@@ -89,6 +90,7 @@ t.add_resource(Role(
                     {"Effect": "Allow", "Action": "cloudformation:*", "Resource": "*"},
                     {"Effect": "Allow", "Action": "ecr:*", "Resource": "*"},
                     {"Effect": "Allow", "Action": "ecs:*", "Resource": "*"},
+                    {"Effect": "Allow", "Action": "ec2:*", "Resource": "*"},
                     {"Effect": "Allow", "Action": "iam:*", "Resource": "*"},
                 ],
             }

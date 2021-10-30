@@ -23,6 +23,9 @@ Resources:
               - Action: ecs:*
                 Effect: Allow
                 Resource: '*'
+              - Action: ec2:*
+                Effect: Allow
+                Resource: '*'
               - Action: iam:*
                 Effect: Allow
                 Resource: '*'
@@ -151,6 +154,9 @@ Resources:
               - Action: s3:*
                 Effect: Allow
                 Resource: '*'
+              - Action: codestar-connections:UseConnection
+                Effect: Allow
+                Resource: arn:aws:codestar-connections:us-east-1:309135946640:connection/*
           PolicyName: HelloworldCodePipeline
     Type: AWS::IAM::Role
   S3Bucket:

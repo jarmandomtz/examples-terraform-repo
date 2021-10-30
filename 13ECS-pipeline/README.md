@@ -178,11 +178,10 @@ Unable to use Connection: arn:aws:codestar-connections:us-east-1:309135946640:co
 
 **Analysis**: 
 Reference: https://stackoverflow.com/questions/64298865/aws-codepipeline-source-action-has-insufficient-permissions-for-codestar-connec
-- Role used by codepipeline: AWS Console -> CodePipline Console -> Pipeline -> Select pipeline -> Settings: Service role ARN
 
 **Solution**
 - Add permisions to the role to use the connection
-AWS Console -> IAM Console -> Roles -> Select role -> Select policy -> Edit policy -> JSON -> Go to the end and add
+- Role used by codepipeline: AWS Console -> CodePipline Console -> Pipeline -> Select pipeline -> Settings: Service role ARN -> Select policy -> Edit policy -> JSON -> Go to the end and add
 
 ```js
 ,
