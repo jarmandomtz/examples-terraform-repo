@@ -147,28 +147,91 @@ helloworld-ecs-service.yaml
 %> aws cloudformation wait stack-delete-complete --stack-name helloworld-codepipeline
 ```
 
-## Example execution
+## Testing 
 
-Files for previous example,
+**Shell scripts for test previous example,**
 - startEnvUploadImage.sh
 - testEnv.sh
 - stopEnvUploadImage.sh
 
-Create ECR, Upload the image, create container and ALB
+**Actions performed on startEnvUploadImage.sh,**
+- ECR creation
+- Upload the image
+- Create Staging cluster
+- Define Staging container using the image uploaded
+- ALB
 
-File for current example,
+**Shell scripts for test current example,**
 - startEnv.sh
 - testEnv.sh
 - stopEnv.sh
 
-Create ECR, Create CodeBuild task and CodePipeline pipeline, create container using CodeBuild and ALB
+**Actions performed on startEnv.sh,**
+- Create ECR
+- Create CodeBuild task and CodePipeline pipeline
+- Create Staging cluster
+- Define Stating container using CodeBuild
+- Create Stating ALB
+- Create Stating DNS name on our DNS Zone esausi.com
+- Create Production cluster
+- Define Production container using CodeBuild
+- Create Production ALB
+- Create Production DNS name on our DNS Zone esausi.com
 
-
+**Actions required previously to Test App,**
+- Configure github connection
+- Retry Pipeline execution
+- Manual Approval for Production deployment
 Once pipeline created, just connect to github and execute it, should be executed the pipeline until manual approval, once approved, should deploy to production as follow,
 ![Successful pipeline execution](./imgs/codepipeline01.png)
 
+**Actions performed on testEnv.sh,**
+- Curl test to Staging ALB
+- Curl test to Staging DNS Zone
+- Curl test to Production ALB
+- Curl test to Production DNS Zone
 
+```js
+%> ./testEnv.sh 
+**********************************************TESTING THE SERVICE****************************************************************
+Testing Staging using ALB ...
+curl http://stagi-LoadB-1T2VDIHW9P308-602002510.us-east-1.elb.amazonaws.com:3000
+Hello World
+Testing Staging using DNS Zone ...
+curl http://staging.esausi.com:3000
+Hello World
+Staging Tests ended ...
+Testing Production using ALB ...
+curl http://produ-LoadB-1K7EV7EKWHWMX-1987398565.us-east-1.elb.amazonaws.com:3000
+Hello World
+Testing Staging using DNS Zone ...
+curl http://production.esausi.com:3000
+Hello World
+Production Tests ended ...
+```
 
+### Triggering change because pushing change to github
+Once pushed the change to the helloworld repo this actions occure,
+- CodePipeline pipeline is launched,
+  - Source Stage: Downloads the code, using new commit and upload as zip file to S3 Bucket
+  - Build Stage: With code downloaded, 
+    - Create directory structure
+    - Add app files (COPY helloworld.js package.json /usr/local/helloworld/)
+    **(Next actions are result of Buildspec file: pre_build, build, post_build phases and artifacts)**
+    - Build the image and push it to the registry
+    - Tag the image to latest on the ECR registry
+    - Create build.json with the tagId ({"tag":"3d12fa50195809f843b031abbb0156e06cc20ef4"}) file and upload as artifact to S3 bucket
+  - Staging Stage: CloudFormation task, using artifacts uploaded to S3 and CloudFormation Template "cf-templates/helloworld-ecs-service.yaml"
+    - Update existant Stack "staging-helloworld-ecs-service". This stack updates,
+      - Creates a new AWS::ECS::TaskDefinition: Using the new image tag:
+        309135946640.dkr.ecr.us-east-1.amazonaws.com/helloworld-aws:3d12fa50195809f843b031abbb0156e06cc20ef4
+      - AWS::ECS::Service: 
+        - Register the new created task on the Service
+        - Drain the requests to the previous task
+        - De register the previous task from the Service
+  - Approval Stage: Wait for manual approval
+  - Production Stage: Same actions as Stating Stage but in Production Cluster.
+  On TaskDefinition
 
 ## Troubleshooting
 
