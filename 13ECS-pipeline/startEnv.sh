@@ -54,14 +54,6 @@ aws cloudformation create-stack \
     --template-body file://helloworld-ecs-alb.yaml \
     --parameters ParameterKey=HostedZone,ParameterValue=esausi.com \
                  ParameterKey=DnsPrefix,ParameterValue=production 
-
-aws cloudformation update-stack \
-    --stack-name production-alb \
-    --capabilities CAPABILITY_IAM \
-    --template-body file://helloworld-ecs-alb.yaml \
-    --parameters ParameterKey=HostedZone,ParameterValue=esausi.com \
-                 ParameterKey=DnsPrefix,ParameterValue=production 
-
 aws cloudformation wait stack-create-complete --stack-name production-alb
 echo "ALB created ..."
 echo ""

@@ -1,5 +1,47 @@
 #!/bin/bash
+
+echo "**************************************PRODUCTION**************************************************"
+#Cannot be deleted fist ALB, ecs-service uses an export defined on alb
+echo "Deleting ECS Service ..."
+aws cloudformation delete-stack --stack-name production-helloworld-ecs-service
+aws cloudformation wait stack-delete-complete --stack-name production-helloworld-ecs-service
+echo "ECS Service deleted "
+echo " "
+
+echo "Deleting ALB ..."
+aws cloudformation delete-stack --stack-name production-alb
+aws cloudformation wait stack-delete-complete --stack-name production-alb
+echo "ALB deleted "
+echo " "
+
+echo "Deleting ECS Cluster ..."
+aws cloudformation delete-stack --stack-name production-cluster
+aws cloudformation wait stack-delete-complete --stack-name production-cluster
+echo "ECS Cluster deleted "
+echo " "
+
+echo "**************************************STAGING**************************************************"
+#Cannot be deleted fist ALB, ecs-service uses an export defined on alb
+echo "Deleting ECS Service ..."
+aws cloudformation delete-stack --stack-name staging-helloworld-ecs-service
+aws cloudformation wait stack-delete-complete --stack-name staging-helloworld-ecs-service
+echo "ECS Service deleted "
+echo " "
+
+echo "Deleting ALB ..."
+aws cloudformation delete-stack --stack-name staging-alb
+aws cloudformation wait stack-delete-complete --stack-name staging-alb
+echo "ALB deleted "
+echo " "
+
+echo "Deleting ECS Cluster ..."
+aws cloudformation delete-stack --stack-name staging-cluster
+aws cloudformation wait stack-delete-complete --stack-name staging-cluster
+echo "ECS Cluster deleted "
+echo " "
+
 echo "**************************************PIPELINE**************************************************"
+#Cannot be deleted CodePipeline at the begining of all, It defines the Role used by CloudFormation for delete ECS Services and Stacks
 echo "Deleting CodePipeline pipeline ..."
 aws cloudformation delete-stack --stack-name helloworld-codepipeline
 aws cloudformation wait stack-delete-complete --stack-name helloworld-codepipeline
@@ -11,44 +53,7 @@ aws cloudformation wait stack-delete-complete --stack-name helloworld-codebuild
 echo "CodeBuild pipeline deleted ..."
 echo " "
 
-echo "**************************************PRODUCTION**************************************************"
-echo "Deleting ECS Service ..."
-aws cloudformation delete-stack --stack-name production-helloworld-service 
-aws cloudformation wait stack-delete-complete --stack-name production-helloworld-service
-echo "ECS Service deleted "
-echo " "
-
-echo "Deleting ALB ..."
-aws cloudformation delete-stack --stack-name production-alb 
-aws cloudformation wait stack-delete-complete --stack-name production-alb
-echo "ALB deleted "
-echo " "
-
-echo "Deleting ECS Cluster ..."
-aws cloudformation delete-stack --stack-name production-cluster 
-aws cloudformation wait stack-delete-complete --stack-name production-cluster
-echo "ECS Cluster deleted "
-echo " "
-
-echo "**************************************STAGING**************************************************"
-echo "Deleting ECS Service ..."
-aws cloudformation delete-stack --stack-name staging-helloworld-service 
-aws cloudformation wait stack-delete-complete --stack-name staging-helloworld-service
-echo "ECS Service deleted "
-echo " "
-
-echo "Deleting ALB ..."
-aws cloudformation delete-stack --stack-name staging-alb 
-aws cloudformation wait stack-delete-complete --stack-name staging-alb
-echo "ALB deleted "
-echo " "
-
-echo "Deleting ECS Cluster ..."
-aws cloudformation delete-stack --stack-name staging-cluster 
-aws cloudformation wait stack-delete-complete --stack-name staging-cluster
-echo "ECS Cluster deleted "
-echo " "
-
+echo "**************************************ECR**************************************************"
 #If ECR contains images, error occurs
 #Resource handler returned message: "The repository with name 'helloworld' in registry with id '309135946640' 
 #cannot be deleted because it still contains images (Service: Ecr, Status Code: 400, 
@@ -66,6 +71,6 @@ echo "ECR images deleted"
 echo " "
 
 echo "Deleting ECR ..."
-aws cloudformation delete-stack --stack-name helloworld-ecr-aws 
+aws cloudformation delete-stack --stack-name helloworld-ecr-aws
 aws cloudformation wait stack-delete-complete --stack-name helloworld-ecr-aws
 echo "ECR deleted "
