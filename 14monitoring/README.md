@@ -6,5 +6,8 @@ Recomendations,
 - Add MFA to root user
 - No to use root user for everyday tasks
 
-## Monitoring
+## Monitoring using CloudTrail
 - [CloudTrail usage](./cloudtrail.md)
+
+## Monitoring using VPC Flow log
+- [VPC Flow logs](./vpcflowlog.md)
